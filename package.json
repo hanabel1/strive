@@ -1,0 +1,14 @@
+{
+  "name": "strive",
+  "version": "1.0.0",
+  "description": "Goals that actually happen - Build your personal curriculum",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 3000",
+    "dev": "python3 -m http.server 3000",
+    "serve": "python3 -m http.server 3000"
+  },
+  "keywords": ["goals", "productivity", "curriculum", "learning"],
+  "author": "hanabel",
+  "license": "MIT"
+}

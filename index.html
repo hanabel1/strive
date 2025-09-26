@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>strive - Goals that actually happen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+
+        .logo {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            color: #2d3748;
+        }
+
+        .main-title {
+            text-align: center;
+            margin-top: 50px;
+            margin-bottom: 10px;
+        }
+
+        .main-title h1 {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 48px;
+            font-weight: 400;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .sparkles {
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        .sparkle {
+            display: inline-block;
+            font-size: 48px;
+            margin-left: -4px;
+        }
+
+        .subtitle {
+            font-family: 'Manrope', sans-serif;
+            text-align: center;
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 40px;
+        }
+
+        .goal-cards {
+            display: flex;
+            gap: 70px;
+            margin-bottom: 40px;
+            justify-content: center;
+        }
+
+        .goal-card {
+            flex: 0 0 280px;
+            padding: 24px 20px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            position: relative;
+            min-height: 140px;
+            transform: rotate(-2deg);
+            transition: transform 0.3s ease;
+        }
+
+        .goal-card:nth-child(2) {
+            transform: rotate(1deg);
+        }
+
+        .goal-card:nth-child(3) {
+            transform: rotate(-1deg);
+        }
+
+        .goal-card:hover {
+            transform: rotate(0deg) scale(1.02);
+        }
+
+        .goal-card.pink {
+            background: linear-gradient(135deg, #fce7f3 0%, #f3e8ff 100%);
+        }
+
+        .goal-card.blue {
+            background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
+        }
+
+        .goal-card.yellow {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        }
+
+        .goal-card-title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .goal-card-motivation {
+            font-family: 'Manrope', sans-serif;
+            font-size: 13px;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .card-sparkle {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            font-size: 18px;
+        }
+
+
+
+        .input-section {
+            padding: 50px 0;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .toggle {
+            position: relative;
+            width: 40px;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-right: 12px;
+        }
+
+        .toggle.active {
+            background: #8b5cf6;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle.active .toggle-slider {
+            transform: translateX(20px);
+        }
+
+        .toggle-label {
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            color: #2d3748;
+            font-weight: 400;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group.half {
+            display: flex;
+            gap: 16px;
+        }
+
+        .form-group.half input {
+            flex: 1;
+        }
+
+        .form-group.details-with-button {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .form-group.details-with-button textarea {
+            flex: 1;
+        }
+
+        input, textarea {
+            font-family: 'Manrope', sans-serif;
+            width: 100%;
+            padding: 16px 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 14px;
+            color: #2d3748;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: box-shadow 0.3s ease;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: #a0aec0;
+        }
+
+        .submit-btn {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+        }
+
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #a855f7 100%);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .submit-btn::after {
+            content: '→';
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* Chatbot Full Page Styles */
+        .chatbot-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
+            z-index: 1000;
+            flex-direction: column;
+        }
+
+        .chatbot-container {
+            width: 100%;
+            height: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .chatbot-header {
+            padding: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chatbot-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            color: #2d3748;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 5px;
+        }
+
+        .chatbot-messages {
+            flex: 1;
+            padding: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 16px 20px;
+            border-radius: 16px;
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .message.bot {
+            background: white;
+            color: #2d3748;
+            align-self: flex-start;
+            border: 1px solid #e2e8f0;
+        }
+
+        .chatbot-input-container {
+            padding: 0;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .chatbot-input {
+            flex: 1;
+            padding: 16px 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            background: white;
+        }
+
+        .chatbot-send {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 16px 24px;
+            color: white;
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .chatbot-send:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #a855f7 100%);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .plan-display {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .plan-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            color: #2d3748;
+            margin-bottom: 16px;
+        }
+
+        .plan-content {
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+
+        .plan-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 16px;
+            padding: 12px 0;
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+        }
+
+        .step-content {
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            color: #2d3748;
+            line-height: 1.5;
+        }
+
+        .step-timeline {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .goal-cards {
+                flex-direction: column;
+            }
+            
+            .main-title h1 {
+                font-size: 36px;
+            }
+            
+            .form-group.half {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">strive</div>
+        </div>
+
+        <div class="main-title">
+            <h1>Goals that <em>actually</em> happen.
+                <span class="sparkles">
+                    <span class="sparkle">✨</span>
+                </span>
+            </h1>
+        </div>
+
+        <div class="subtitle">Build my personal curriculum.</div>
+
+        <div class="goal-cards">
+            <div class="goal-card pink">
+                <div class="goal-card-title">Learn Python in 90 Days</div>
+                <div class="goal-card-motivation">become that coding girlie</div>
+            </div>
+            <div class="goal-card blue">
+                <div class="goal-card-title">Marathon Training Plan</div>
+                <div class="goal-card-motivation">we're not walking anymore bestie</div>
+            </div>
+            <div class="goal-card yellow">
+                <div class="goal-card-title">Master 3D Modeling</div>
+                <div class="goal-card-motivation">Character design is my passion</div>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <div class="toggle-container">
+                <div class="toggle active" id="structuredToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+                <span class="toggle-label">Structured lessons</span>
+            </div>
+
+            <div class="form-group">
+                <input type="text" placeholder="Write down your goal..." id="goalInput">
+            </div>
+
+            <div class="form-group half">
+                <input type="text" placeholder="mm/dd/yy" id="startDate">
+                <input type="text" placeholder="mm/dd/yy" id="endDate">
+            </div>
+
+            <div class="form-group details-with-button">
+                <textarea placeholder="Details (optional): prior knowledge, constraints, resources, style..." id="detailsInput" rows="3"></textarea>
+                <button class="submit-btn" id="submitBtn"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot Modal -->
+    <div class="chatbot-modal" id="chatbotModal">
+        <div class="chatbot-container">
+            <div class="chatbot-header">
+                <div class="chatbot-title">Goal Planning Assistant</div>
+                <button class="close-btn" id="closeChatbot">&times;</button>
+            </div>
+            <div class="chatbot-messages" id="chatbotMessages">
+                <!-- Messages will be added here dynamically -->
+            </div>
+            <div class="chatbot-input-container">
+                <input type="text" class="chatbot-input" id="chatbotInput" placeholder="Type your response...">
+                <button class="chatbot-send" id="chatbotSend">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle functionality
+        const toggle = document.getElementById('structuredToggle');
+        toggle.addEventListener('click', () => {
+            toggle.classList.toggle('active');
+        });
+
+        // Chatbot functionality
+        let languageModelSession = null;
+        let conversationState = {
+            currentGoal: '',
+            startDate: '',
+            endDate: '',
+            details: '',
+            structured: false,
+            questionsAsked: 0,
+            maxQuestions: 3,
+            conversationComplete: false
+        };
+
+        // DOM elements
+        const chatbotModal = document.getElementById('chatbotModal');
+        const chatbotMessages = document.getElementById('chatbotMessages');
+        const chatbotInput = document.getElementById('chatbotInput');
+        const chatbotSend = document.getElementById('chatbotSend');
+        const closeChatbot = document.getElementById('closeChatbot');
+        const submitBtn = document.getElementById('submitBtn');
+        const goalInput = document.getElementById('goalInput');
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        const detailsInput = document.getElementById('detailsInput');
+
+        // Check if Prompt API is available
+        async function checkPromptAPI() {
+            if (!('LanguageModel' in window)) {
+                console.log('Prompt API not available in this browser');
+                return false;
+            }
+            return true;
+        }
+
+        // Initialize the language model session
+        async function initializeLanguageModel() {
+            try {
+                const availability = await LanguageModel.availability({
+                    expectedInputs: [{ type: "text", languages: ["en"] }],
+                    expectedOutputs: [{ type: "text", languages: ["en"] }]
+                });
+
+                console.log('Language model availability:', availability);
+
+                if (availability === 'unavailable') {
+                    console.log('Language model not available');
+                    return false;
+                }
+
+                if (availability === 'downloadable' || availability === 'downloading') {
+                    console.log('Downloading language model...');
+                }
+
+                languageModelSession = await LanguageModel.create({
+                    expectedInputs: [{ type: "text", languages: ["en"] }],
+                    expectedOutputs: [{ type: "text", languages: ["en"] }],
+                    monitor(m) {
+                        m.addEventListener("downloadprogress", e => {
+                            console.log(`Download progress: ${Math.round(e.loaded * 100)}%`);
+                        });
+                    }
+                });
+
+                console.log('Language model session created successfully');
+                return true;
+            } catch (error) {
+                console.error('Failed to initialize language model:', error);
+                return false;
+            }
+        }
+
+        // Add message to chatbot
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            messageDiv.textContent = content;
+            chatbotMessages.appendChild(messageDiv);
+            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }
+
+        // Show chatbot full page
+        function showChatbot() {
+            chatbotModal.style.display = 'flex';
+            chatbotInput.focus();
+        }
+
+        // Hide chatbot and return to main page
+        function hideChatbot() {
+            chatbotModal.style.display = 'none';
+        }
+
+        // Generate AI response
+        async function generateAIResponse(userMessage, context) {
+            if (!languageModelSession) {
+                return "I'm sorry, the AI assistant is not available right now.";
+            }
+
+            try {
+                const prompt = `You are a helpful goal-setting assistant. You're having a conversation with a user to help them create a detailed, actionable plan for their goal.
+
+Context: ${JSON.stringify(context)}
+
+User's latest message: "${userMessage}"
+
+Based on the conversation so far, respond naturally and helpfully. If you need more information to create a good plan, ask specific follow-up questions. If you have enough information, provide a detailed step-by-step plan with timelines.
+
+Keep responses conversational and under 200 words.`;
+
+                const response = await languageModelSession.prompt(prompt);
+                return response;
+            } catch (error) {
+                console.error('Error generating AI response:', error);
+                return "I'm sorry, I encountered an error. Please try again.";
+            }
+        }
+
+        // Handle chatbot conversation
+        async function handleChatbotConversation() {
+            const userMessage = chatbotInput.value.trim();
+            if (!userMessage) return;
+
+            // Add user message
+            addMessage(userMessage, true);
+            chatbotInput.value = '';
+
+            // Update conversation state
+            conversationState.questionsAsked++;
+
+            // Generate AI response
+            const aiResponse = await generateAIResponse(userMessage, conversationState);
+            addMessage(aiResponse);
+
+            // Check if we should end the conversation
+            if (conversationState.questionsAsked >= conversationState.maxQuestions || 
+                aiResponse.toLowerCase().includes('plan') || 
+                aiResponse.toLowerCase().includes('step')) {
+                
+                // Generate final plan
+                await generateFinalPlan();
+            }
+        }
+
+        // Generate final step-by-step plan
+        async function generateFinalPlan() {
+            if (!languageModelSession) return;
+
+            try {
+                const prompt = `Create a detailed, step-by-step plan for achieving this goal: "${conversationState.currentGoal}"
+
+Timeline: ${conversationState.startDate} to ${conversationState.endDate}
+Details: ${conversationState.details}
+Structured learning: ${conversationState.structured}
+
+Provide a comprehensive plan with:
+1. 5-7 specific, actionable steps
+2. Timeline for each step
+3. Resources or tools needed
+4. Milestones to track progress
+
+Format as a clear, numbered list with timelines.`;
+
+                const plan = await languageModelSession.prompt(prompt);
+                
+                // Display the plan in a special format
+                const planDiv = document.createElement('div');
+                planDiv.className = 'plan-display';
+                planDiv.innerHTML = `
+                    <div class="plan-title">Your Personalized Plan</div>
+                    <div class="plan-content">${plan.replace(/\n/g, '<br>')}</div>
+                `;
+                chatbotMessages.appendChild(planDiv);
+                chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+
+                conversationState.conversationComplete = true;
+            } catch (error) {
+                console.error('Error generating final plan:', error);
+                addMessage("I'm sorry, I couldn't generate your plan. Please try again.");
+            }
+        }
+
+        // Start goal planning conversation
+        async function startGoalPlanning(goalData) {
+            conversationState = {
+                currentGoal: goalData.goal,
+                startDate: goalData.startDate,
+                endDate: goalData.endDate,
+                details: goalData.details,
+                structured: goalData.structured,
+                questionsAsked: 0,
+                maxQuestions: 3,
+                conversationComplete: false
+            };
+
+            // Clear previous messages
+            chatbotMessages.innerHTML = '';
+
+            // Start conversation
+            addMessage(`Great! I'd love to help you create a detailed plan for "${goalData.goal}". Let me ask you a few questions to make sure I give you the best possible roadmap.`);
+            
+            if (!goalData.details) {
+                addMessage("First, can you tell me more about your current experience level with this goal? What do you already know, and what challenges do you expect to face?");
+            } else {
+                addMessage(`I see you mentioned: "${goalData.details}". Can you tell me more about your specific learning style and what resources you prefer to use?`);
+            }
+
+            showChatbot();
+        }
+
+        // Event listeners
+        submitBtn.addEventListener('click', async () => {
+            const goal = goalInput.value.trim();
+            if (goal) {
+                const goalData = {
+                    goal,
+                    startDate: startDate.value,
+                    endDate: endDate.value,
+                    details: detailsInput.value,
+                    structured: toggle.classList.contains('active')
+                };
+
+                console.log('New goal:', goalData);
+
+                if (languageModelSession) {
+                    await startGoalPlanning(goalData);
+                } else {
+                    alert('AI assistant is not available. Please enable the Prompt API in Chrome 138+ with the required flags.');
+                }
+                
+                // Clear form
+                goalInput.value = '';
+                startDate.value = '';
+                endDate.value = '';
+                detailsInput.value = '';
+            }
+        });
+
+        // Chatbot event listeners
+        chatbotSend.addEventListener('click', handleChatbotConversation);
+        chatbotInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleChatbotConversation();
+            }
+        });
+        closeChatbot.addEventListener('click', hideChatbot);
+
+        // Enter key to submit main form
+        goalInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitBtn.click();
+            }
+        });
+
+        // Initialize the app
+        async function initApp() {
+            const hasPromptAPI = await checkPromptAPI();
+            if (hasPromptAPI) {
+                await initializeLanguageModel();
+            }
+        }
+
+        // Start the app when page loads
+        initApp();
+    </script>
+</body>
+</html>

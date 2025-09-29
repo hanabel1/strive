@@ -1,6 +1,6 @@
 # strive
 
-**37 days left. We got this!
+33 days left. oh no. 
 
 ##  Quick Start
 

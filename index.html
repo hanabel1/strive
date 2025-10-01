@@ -247,6 +247,177 @@
             color: #a0aec0;
         }
 
+        .custom-date-input {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .custom-date-input input {
+            padding-right: 40px;
+            cursor: pointer;
+        }
+
+        .date-picker-icon {
+            position: absolute;
+            right: 12px;
+            font-size: 18px;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+
+        .date-picker-icon:hover {
+            opacity: 1;
+        }
+
+        .date-picker-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .date-picker-container {
+            background: white;
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            max-width: 320px;
+            width: 90%;
+        }
+
+        .date-picker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .date-picker-nav {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .date-picker-nav:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #a855f7 100%);
+            transform: scale(1.1);
+        }
+
+        .date-picker-header h3 {
+            color: #2d3748;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .date-picker-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .date-picker-weekdays div {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            padding: 8px 0;
+        }
+
+        .date-picker-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 20px;
+        }
+
+        .date-picker-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            color: #2d3748;
+        }
+
+        .date-picker-day:hover {
+            background: linear-gradient(135deg, #fce7f3 0%, #f3e8ff 100%);
+            color: #8b5cf6;
+        }
+
+        .date-picker-day.selected {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
+            color: white;
+        }
+
+        .date-picker-day.other-month {
+            color: #a0aec0;
+        }
+
+        .date-picker-day.today {
+            background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        .date-picker-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .date-picker-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .date-picker-btn.secondary {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+        }
+
+        .date-picker-btn.secondary:hover {
+            background: #edf2f7;
+        }
+
+        .date-picker-btn.primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
+            color: white;
+        }
+
+        .date-picker-btn.primary:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #a855f7 100%);
+            transform: translateY(-1px);
+        }
+
         .submit-btn {
             width: clamp(44px, 5vw, 52px);
             height: clamp(44px, 5vw, 52px);
@@ -478,11 +649,11 @@
         <div class="goal-cards">
             <div class="goal-card pink">
                 <div class="goal-card-title">Learn Python in 90 Days</div>
-                <div class="goal-card-motivation">become that coding girlie</div>
+                <div class="goal-card-motivation">Become that coding girlie</div>
             </div>
             <div class="goal-card blue">
                 <div class="goal-card-title">Marathon Training Plan</div>
-                <div class="goal-card-motivation">we're not walking anymore bestie</div>
+                <div class="goal-card-motivation">We're not walking anymore bestie</div>
             </div>
             <div class="goal-card yellow">
                 <div class="goal-card-title">Master 3D Modeling</div>
@@ -503,13 +674,44 @@
             </div>
 
             <div class="form-group half">
-                <input type="text" placeholder="mm/dd/yy" id="startDate">
-                <input type="text" placeholder="mm/dd/yy" id="endDate">
+                <div class="custom-date-input">
+                    <input type="text" placeholder="Start Date" id="startDate" readonly>
+                    <div class="date-picker-icon">📅</div>
+                </div>
+                <div class="custom-date-input">
+                    <input type="text" placeholder="End Date" id="endDate" readonly>
+                    <div class="date-picker-icon">📅</div>
+                </div>
             </div>
 
             <div class="form-group details-with-button">
                 <textarea placeholder="Details (optional): prior knowledge, constraints, resources, style..." id="detailsInput" rows="3"></textarea>
                 <button class="submit-btn" id="submitBtn"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Date Picker Modal -->
+    <div class="date-picker-modal" id="datePickerModal">
+        <div class="date-picker-container">
+            <div class="date-picker-header">
+                <button class="date-picker-nav" id="prevMonth">‹</button>
+                <h3 id="currentMonth"></h3>
+                <button class="date-picker-nav" id="nextMonth">›</button>
+            </div>
+            <div class="date-picker-weekdays">
+                <div>Sun</div>
+                <div>Mon</div>
+                <div>Tue</div>
+                <div>Wed</div>
+                <div>Thu</div>
+                <div>Fri</div>
+                <div>Sat</div>
+            </div>
+            <div class="date-picker-days" id="datePickerDays"></div>
+            <div class="date-picker-actions">
+                <button class="date-picker-btn secondary" id="clearDate">Clear</button>
+                <button class="date-picker-btn primary" id="selectDate">Select</button>
             </div>
         </div>
     </div>
@@ -562,6 +764,150 @@
         const startDate = document.getElementById('startDate');
         const endDate = document.getElementById('endDate');
         const detailsInput = document.getElementById('detailsInput');
+
+        // Custom Date Picker functionality
+        const datePickerModal = document.getElementById('datePickerModal');
+        const currentMonthEl = document.getElementById('currentMonth');
+        const datePickerDays = document.getElementById('datePickerDays');
+        const prevMonthBtn = document.getElementById('prevMonth');
+        const nextMonthBtn = document.getElementById('nextMonth');
+        const selectDateBtn = document.getElementById('selectDate');
+        const clearDateBtn = document.getElementById('clearDate');
+
+        let currentDate = new Date();
+        let selectedDate = null;
+        let currentInput = null;
+
+        const months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        function formatDate(date) {
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        }
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            currentMonthEl.textContent = `${months[month]} ${year}`;
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDate = firstDay.getDay();
+            const daysInMonth = lastDay.getDate();
+            
+            datePickerDays.innerHTML = '';
+            
+            // Add empty cells for days before the first day of the month
+            for (let i = 0; i < startDate; i++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'date-picker-day other-month';
+                dayEl.textContent = '';
+                datePickerDays.appendChild(dayEl);
+            }
+            
+            // Add days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'date-picker-day';
+                dayEl.textContent = day;
+                
+                const date = new Date(year, month, day);
+                const today = new Date();
+                
+                if (date.toDateString() === today.toDateString()) {
+                    dayEl.classList.add('today');
+                }
+                
+                if (selectedDate && date.toDateString() === selectedDate.toDateString()) {
+                    dayEl.classList.add('selected');
+                }
+                
+                dayEl.addEventListener('click', () => {
+                    selectedDate = new Date(year, month, day);
+                    renderCalendar();
+                });
+                
+                datePickerDays.appendChild(dayEl);
+            }
+        }
+
+        function openDatePicker(input) {
+            currentInput = input;
+            selectedDate = null;
+            currentDate = new Date();
+            renderCalendar();
+            datePickerModal.style.display = 'flex';
+        }
+
+        function closeDatePicker() {
+            datePickerModal.style.display = 'none';
+            currentInput = null;
+            selectedDate = null;
+        }
+
+        // Event listeners
+        startDate.addEventListener('click', () => openDatePicker(startDate));
+        endDate.addEventListener('click', () => openDatePicker(endDate));
+        
+        // Add keyboard support
+        startDate.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openDatePicker(startDate);
+            }
+        });
+        
+        endDate.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openDatePicker(endDate);
+            }
+        });
+        
+        document.querySelectorAll('.date-picker-icon').forEach(icon => {
+            icon.addEventListener('click', (e) => {
+                const input = e.target.parentElement.querySelector('input');
+                openDatePicker(input);
+            });
+        });
+
+        prevMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        nextMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+        selectDateBtn.addEventListener('click', () => {
+            if (selectedDate && currentInput) {
+                currentInput.value = formatDate(selectedDate);
+                closeDatePicker();
+            }
+        });
+
+        clearDateBtn.addEventListener('click', () => {
+            if (currentInput) {
+                currentInput.value = '';
+                closeDatePicker();
+            }
+        });
+
+        // Close modal when clicking outside
+        datePickerModal.addEventListener('click', (e) => {
+            if (e.target === datePickerModal) {
+                closeDatePicker();
+            }
+        });
 
         // Check if Prompt API is available
         async function checkPromptAPI() {

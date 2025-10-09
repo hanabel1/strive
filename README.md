@@ -1,6 +1,6 @@
 # strive
 
-33 days left. oh no. 
+23 days left. gulp. oh no. 
 
 ##  Quick Start
 

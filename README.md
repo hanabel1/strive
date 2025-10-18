@@ -1,37 +1,32 @@
 # strive
 
-23 days left. gulp. oh no. 
+38 days left!
+We got this!
 
-##  Quick Start
+## Quick start (Chrome + Gemini Nano)
 
-### Option 1: Python Server
-```bash
-# Navigate to the project folder
-cd /Users/hanabelmengistu/strive
+- **Use Chrome 138+**: check at `chrome://version`.
+- First run will download Gemini Nano in the background. You can watch status in `chrome://on-device-internals`.
 
-# Start the local server
-python3 -m http.server 3000
+### If it says unavailable
+If `availability()` shows "unavailable", enable these flags, then relaunch Chrome:
+- `#prompt-api-for-gemini-nano`
+- `#optimization-guide-on-device-model`
 
-# Open your browser to:
-# http://localhost:3000
-```
+### Load the extension
+Once it works:
+- Go to `chrome://extensions`
+- Toggle on **Developer mode**
+- Click **Load unpacked** and select the folder with this repo
+- Click the extension icon (top right) to open the popup
+- In the popup, click **Start / Check**
 
-### Option 2: Node.js Server
-```bash
-# Install dependencies (if you have Node.js)
-npm install
+### What you should see
+- `availability: downloadable` → then
+- `download: 1% … 100%` → then
+- `reply: ready` (or a short greeting)
 
-# Start the server
-npm start
+Now peek at `chrome://on-device-internals` again. It should switch from "No On-device Feature Used" to **Downloading** or **Ready**.
 
-# Open your browser to:
-# http://localhost:3000
-```
-
-### Option 3: Live Server (VS Code)
-If you're using VS Code:
-1. Install the "Live Server" extension
-2. Right-click on `index.html`
-3. Select "Open with Live Server"
-
-## In progressss
+### Chrome for Developers
+Good to have installed/updated so you get the latest features.

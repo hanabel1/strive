@@ -1,7 +1,6 @@
 # strive
 
-38 days left!
-We got this!
+2 weeks left... we got this!
 
 ## Quick start (Chrome + Gemini Nano)
 

@@ -29,37 +29,28 @@
         <div class="subtitle">Build my personal curriculum.</div>
 
         <div class="main-content">
-            <div class="goal-cards">
-                <div class="goal-card pink">
-                    <div class="goal-card-title">Learn Python in 90 Days</div>
-                    <div class="goal-card-motivation">Become that coding girlie</div>
+            <div class="left-content">
+                <div class="goal-cards">
+                    <div class="goal-card pink">
+                        <div class="goal-card-title">Learn Python in 90 Days</div>
+                        <div class="goal-card-motivation">Become that coding girlie</div>
+                    </div>
+                    <div class="goal-card blue">
+                        <div class="goal-card-title">Marathon Training Plan</div>
+                        <div class="goal-card-motivation">We're not walking anymore bestie</div>
+                    </div>
+                    <div class="goal-card yellow">
+                        <div class="goal-card-title">Master 3D Modeling</div>
+                        <div class="goal-card-motivation">Character design is my passion</div>
+                    </div>
+                    <div class="goal-card green">
+                        <div class="goal-card-title">Crochet a dino plushie</div>
+                        <div class="goal-card-motivation">Crafts are my therapy</div>
+                    </div>
                 </div>
-                <div class="goal-card blue">
-                    <div class="goal-card-title">Marathon Training Plan</div>
-                    <div class="goal-card-motivation">We're not walking anymore bestie</div>
-                </div>
-                <div class="goal-card yellow">
-                    <div class="goal-card-title">Master 3D Modeling</div>
-                    <div class="goal-card-motivation">Character design is my passion</div>
-                </div>
-                <div class="goal-card green">
-                    <div class="goal-card-title">Crochet a dino plushie</div>
-                    <div class="goal-card-motivation">Crafts are my therapy</div>
-                </div>
-            </div>
 
-            <!-- History Panel -->
-            <section id="history-panel" class="history-panel">
-                <div class="history-header">
-                    <h3>✨ Your Past Quests</h3>
-                </div>
-                <div class="history-content" id="historyContent">
-                    <!-- History items will be dynamically added here -->
-                </div>
-            </section>
-        </div>
-
-        <div class="input-section">
+                <!-- Input Section -->
+                <div class="input-section">
             <div class="toggle-container">
                 <div class="toggle active" id="structuredToggle">
                     <div class="toggle-slider"></div>
@@ -85,6 +76,31 @@
             <div class="form-group details-with-button">
                 <textarea placeholder="Details (optional): prior knowledge, constraints, resources, style..." id="detailsInput" rows="3"></textarea>
                 <button class="submit-btn" id="submitBtn"></button>
+            </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="right-sidebar">
+                <!-- History Panel -->
+                <section id="history-panel" class="history-panel">
+                    <div class="history-header">
+                        <h3>✨ Your Past Quests</h3>
+                    </div>
+                    <div class="history-content" id="historyContent">
+                        <!-- History items will be dynamically added here -->
+                    </div>
+                </section>
+
+                <!-- Todo Panel -->
+                <section id="todo-panel" class="todo-panel">
+                    <div class="todo-header">
+                        <h3>📋 To-Do's & Checklist</h3>
+                    </div>
+                    <div class="todo-content" id="todoContent">
+                        <!-- Todo items will be dynamically added here -->
+                    </div>
+                </section>
             </div>
         </div>
     </div>

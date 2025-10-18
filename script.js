@@ -459,7 +459,43 @@ async function generateFinalPlan() {
     if (!languageModelSession) return;
 
     try {
-        const prompt = `Create a detailed, step-by-step plan for achieving this goal: "${conversationState.currentGoal}"
+        // Use the learning plan generator for structured plans
+        if (conversationState.structured) {
+            try {
+                console.log('Creating LearningPlanGenerator...');
+                const planGenerator = new LearningPlanGenerator();
+                console.log('LearningPlanGenerator created successfully');
+                
+                const constraints = {
+                    dailyMinutes: 60, // 1 hour per day as requested
+                    daysPerWeek: 5,
+                    priorSkill: 'beginner',
+                    accessibility: []
+                };
+                
+                console.log('Generating plan with constraints:', constraints);
+                const plan = planGenerator.generatePlan(
+                    conversationState.currentGoal,
+                    conversationState.startDate,
+                    conversationState.endDate,
+                    constraints
+                );
+                
+                console.log('Plan generated successfully:', plan);
+                
+                // Display the structured learning plan
+                await displayStructuredPlan(plan);
+                
+                // Add "Start Learning" button
+                setTimeout(() => {
+                    addStartLearningButton(plan);
+                }, 1000);
+            } catch (error) {
+                console.error('Error in structured plan generation:', error);
+                addMessage("I encountered an error generating your structured learning plan. Let me try with a different approach.");
+                
+                // Fallback to AI-generated plan
+                const prompt = `Create a detailed, step-by-step plan for achieving this goal: "${conversationState.currentGoal}"
 
 Timeline: ${conversationState.startDate} to ${conversationState.endDate}
 Details: ${conversationState.details}
@@ -473,10 +509,28 @@ Provide a comprehensive plan with:
 
 Format as a clear, numbered list with timelines.`;
 
-        const plan = await languageModelSession.prompt(prompt);
+                const plan = await languageModelSession.prompt(prompt);
+                await streamPlan(plan);
+            }
+        } else {
+            // Use AI for unstructured plans
+            const prompt = `Create a detailed, step-by-step plan for achieving this goal: "${conversationState.currentGoal}"
 
-        // Stream the plan progressively
-        await streamPlan(plan);
+Timeline: ${conversationState.startDate} to ${conversationState.endDate}
+Details: ${conversationState.details}
+Structured learning: ${conversationState.structured}
+
+Provide a comprehensive plan with:
+1. 5-7 specific, actionable steps
+2. Timeline for each step
+3. Resources or tools needed
+4. Milestones to track progress
+
+Format as a clear, numbered list with timelines.`;
+
+            const plan = await languageModelSession.prompt(prompt);
+            await streamPlan(plan);
+        }
 
         conversationState.conversationComplete = true;
     } catch (error) {
@@ -527,34 +581,17 @@ submitBtn.addEventListener('click', async () => {
 
         console.log('New goal:', goalData);
 
-        // Show loading state on submit button
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '⏳';
-        submitBtn.disabled = true;
-
-        try {
-            // Save goal to history with curriculum generation
-            await saveGoalToHistory(goalData);
-
-            if (languageModelSession) {
-                await startGoalPlanning(goalData);
-            } else {
-                alert('AI assistant is not available. Please enable the Prompt API in Chrome 138+ with the required flags.');
-            }
-        } catch (error) {
-            console.error('Error processing goal:', error);
-            alert('Error processing your goal. Please try again.');
-        } finally {
-            // Restore submit button
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-            
-            // Clear form
-            goalInput.value = '';
-            startDate.value = '';
-            endDate.value = '';
-            detailsInput.value = '';
+        if (languageModelSession) {
+            await startGoalPlanning(goalData);
+        } else {
+            alert('AI assistant is not available. Please enable the Prompt API in Chrome 138+ with the required flags.');
         }
+        
+        // Clear form
+        goalInput.value = '';
+        startDate.value = '';
+        endDate.value = '';
+        detailsInput.value = '';
     }
 });
 
@@ -574,487 +611,180 @@ goalInput.addEventListener('keypress', (e) => {
     }
 });
 
-// History Management Functions
-// ===========================
-// These functions handle saving, loading, and displaying goal history
-// Integrated with Gemini API for curriculum generation
-
-// Save goal to localStorage with curriculum and progress tracking
-async function saveGoalToHistory(goalData) {
-    try {
-        const historyKey = 'strive-goal-history';
-        const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
-        
-        // Generate curriculum using Gemini API
-        const curriculum = await generateCurriculum(goalData);
-        
-        // Generate mock progress data for demonstration
-        const progressData = generateMockProgress(goalData);
-        
-        const historyItem = {
-            id: Date.now().toString(),
-            title: goalData.goal,
-            startDate: goalData.startDate,
-            endDate: goalData.endDate,
-            details: goalData.details,
-            structured: goalData.structured,
-            createdAt: new Date().toISOString(),
-            curriculum: curriculum,
-            progress: progressData,
-            notes: goalData.details || 'No additional notes'
-        };
-        
-        // Add to beginning of array (most recent first)
-        existingHistory.unshift(historyItem);
-        
-        // Keep only last 20 goals to prevent localStorage bloat
-        if (existingHistory.length > 20) {
-            existingHistory.splice(20);
-        }
-        
-        localStorage.setItem(historyKey, JSON.stringify(existingHistory));
-        console.log('Goal saved to history with curriculum:', historyItem);
-        
-        // Refresh history display
-        loadAndDisplayHistory();
-        
-        return historyItem;
-    } catch (error) {
-        console.error('Error saving goal to history:', error);
-        // Still save the goal even if curriculum generation fails
-        const historyItem = {
-            id: Date.now().toString(),
-            title: goalData.goal,
-            startDate: goalData.startDate,
-            endDate: goalData.endDate,
-            details: goalData.details,
-            structured: goalData.structured,
-            createdAt: new Date().toISOString(),
-            curriculum: null,
-            progress: generateMockProgress(goalData),
-            notes: goalData.details || 'No additional notes'
-        };
-        
-        const existingHistory = JSON.parse(localStorage.getItem('strive-goal-history') || '[]');
-        existingHistory.unshift(historyItem);
-        localStorage.setItem('strive-goal-history', JSON.stringify(existingHistory));
-        loadAndDisplayHistory();
-        
-        return historyItem;
-    }
-}
-
-// Generate mock progress data for demonstration
-function generateMockProgress(goalData) {
-    const totalDays = calculateDaysBetween(goalData.startDate, goalData.endDate);
-    const daysPassed = calculateDaysBetween(goalData.startDate, new Date().toISOString().split('T')[0]);
-    
-    // Mock progress calculation
-    const progressPercentage = Math.min(Math.max((daysPassed / totalDays) * 100, 0), 100);
-    const totalLessons = Math.floor(Math.random() * 20) + 10; // Random between 10-30 lessons
-    const completedLessons = Math.floor((progressPercentage / 100) * totalLessons);
-    
-    return {
-        percentage: Math.round(progressPercentage),
-        completed: completedLessons,
-        total: totalLessons,
-        status: progressPercentage === 100 ? 'completed' : progressPercentage > 0 ? 'in-progress' : 'not-started'
-    };
-}
-
-// Calculate days between two dates
-function calculateDaysBetween(startDate, endDate) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end - start);
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-}
-
-// Load history from localStorage and display it
-function loadAndDisplayHistory() {
-    try {
-        const historyKey = 'strive-goal-history';
-        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
-        const historyContent = document.getElementById('historyContent');
-        
-        if (!historyContent) return;
-        
-        // Clear existing content
-        historyContent.innerHTML = '';
-        
-        if (history.length === 0) {
-            historyContent.innerHTML = `
-                <div class="history-empty">
-                    <p style="text-align: center; color: #6b7280; font-style: italic; margin: 20px 0;">
-                        No past quests yet. Create your first goal to see it here! ✨
-                    </p>
-                </div>
-            `;
-            return;
-        }
-        
-        // Render each history item
-        history.forEach((item, index) => {
-            const historyItem = createHistoryItemElement(item, index);
-            historyContent.appendChild(historyItem);
-        });
-        
-    } catch (error) {
-        console.error('Error loading history:', error);
-    }
-}
-
-// Create HTML element for a history item
-function createHistoryItemElement(item, index) {
-    const historyItem = document.createElement('div');
-    historyItem.className = 'history-item';
-    historyItem.style.animationDelay = `${index * 0.1}s`; // Stagger animation
-    
-    const progressPercentage = item.progress.percentage;
-    const progressText = `${item.progress.completed} / ${item.progress.total} lessons completed`;
-    
-    historyItem.innerHTML = `
-        <div class="history-item-title">${escapeHtml(item.title)}</div>
-        <div class="history-item-dates">${formatDateRange(item.startDate, item.endDate)}</div>
-        <div class="history-item-progress">
-            <div class="progress-bar-container">
-                <div class="progress-bar" style="width: ${progressPercentage}%"></div>
-            </div>
-            <div class="progress-text">${progressText}</div>
-        </div>
-        ${item.notes ? `<div class="history-item-notes">${escapeHtml(item.notes)}</div>` : ''}
-        <div class="history-item-actions">
-            <button class="history-btn view" data-goal-id="${item.id}">View Plan</button>
-            <button class="history-btn regenerate" data-goal-id="${item.id}">Regenerate</button>
-        </div>
-    `;
-    
-    return historyItem;
-}
-
-// Format date range for display
-function formatDateRange(startDate, endDate) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    const formatOptions = { month: 'short', day: 'numeric' };
-    const startFormatted = start.toLocaleDateString('en-US', formatOptions);
-    const endFormatted = end.toLocaleDateString('en-US', formatOptions);
-    
-    return `${startFormatted} → ${endFormatted}`;
-}
-
-// Gemini API Integration
-// =====================
-// Functions for generating curriculum using Gemini API (Chrome Prompt API or Cloud API)
-
-// Generate curriculum using Gemini API
-async function generateCurriculum(goalData) {
-    try {
-        // Check if we have the Prompt API available (Chrome 138+)
-        if (languageModelSession) {
-            return await generateCurriculumWithPromptAPI(goalData);
-        } else {
-            // Fallback to mock curriculum if API not available
-            console.log('Prompt API not available, generating mock curriculum');
-            return generateMockCurriculum(goalData);
-        }
-    } catch (error) {
-        console.error('Error generating curriculum:', error);
-        return generateMockCurriculum(goalData);
-    }
-}
-
-// Generate curriculum using Chrome's Prompt API (Gemini Nano)
-async function generateCurriculumWithPromptAPI(goalData) {
-    try {
-        const prompt = `Create a detailed, structured curriculum plan for this learning goal:
-
-Goal: "${goalData.goal}"
-Timeline: ${goalData.startDate} to ${goalData.endDate}
-Details: ${goalData.details || 'No additional details provided'}
-Structured Learning: ${goalData.structured ? 'Yes' : 'No'}
-
-Please provide a comprehensive curriculum with:
-1. 5-7 main learning modules/phases
-2. Specific topics and skills for each module
-3. Suggested timeline for each module
-4. Recommended resources (books, courses, practice exercises)
-5. Milestones and assessment points
-6. Practical projects or exercises
-
-Format as a clear, structured plan that can be followed step-by-step.`;
-
-        const response = await languageModelSession.prompt(prompt);
-        return response;
-    } catch (error) {
-        console.error('Error with Prompt API:', error);
-        throw error;
-    }
-}
-
-// Generate mock curriculum for demonstration
-function generateMockCurriculum(goalData) {
-    const modules = [
-        "Foundation & Basics",
-        "Core Concepts & Theory", 
-        "Practical Application",
-        "Advanced Techniques",
-        "Real-world Projects",
-        "Review & Mastery"
-    ];
-    
-    return `# ${goalData.goal} - Learning Curriculum
-
-## Overview
-A structured learning path designed to help you achieve your goal of "${goalData.goal}" within your timeline of ${goalData.startDate} to ${goalData.endDate}.
-
-## Learning Modules
-
-${modules.map((module, index) => `
-### ${index + 1}. ${module}
-- **Duration**: 1-2 weeks
-- **Focus**: [Specific topics will be generated based on your goal]
-- **Resources**: Recommended materials and exercises
-- **Milestone**: Key achievement to track progress
-`).join('')}
-
-## Assessment Points
-- Weekly progress reviews
-- Module completion checkpoints
-- Final project presentation
-
-## Next Steps
-1. Review the full curriculum
-2. Set up your learning environment
-3. Begin with Module 1
-4. Track your progress regularly
-
-*This is a sample curriculum. The actual curriculum will be generated by AI based on your specific goal and requirements.*`;
-}
-
-// Handle View Plan button click
-async function handleViewPlan(goalId) {
-    try {
-        const historyKey = 'strive-goal-history';
-        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
-        const goal = history.find(item => item.id === goalId);
-        
-        if (!goal) {
-            console.error('Goal not found:', goalId);
-            return;
-        }
-        
-        // Show curriculum modal
-        showCurriculumModal(goal.title, goal.curriculum);
-        
-    } catch (error) {
-        console.error('Error viewing plan:', error);
-        alert('Error loading curriculum. Please try again.');
-    }
-}
-
-// Handle Regenerate Plan button click
-async function handleRegeneratePlan(goalId) {
-    try {
-        const historyKey = 'strive-goal-history';
-        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
-        const goalIndex = history.findIndex(item => item.id === goalId);
-        
-        if (goalIndex === -1) {
-            console.error('Goal not found:', goalId);
-            return;
-        }
-        
-        const goal = history[goalIndex];
-        
-        // Show loading state
-        showCurriculumModal(goal.title, 'Generating new curriculum...');
-        
-        // Generate new curriculum
-        const newCurriculum = await generateCurriculum({
-            goal: goal.title,
-            startDate: goal.startDate,
-            endDate: goal.endDate,
-            details: goal.details,
-            structured: goal.structured
-        });
-        
-        // Update the goal in history
-        history[goalIndex].curriculum = newCurriculum;
-        history[goalIndex].updatedAt = new Date().toISOString();
-        
-        localStorage.setItem(historyKey, JSON.stringify(history));
-        
-        // Update the modal with new curriculum
-        showCurriculumModal(goal.title, newCurriculum);
-        
-        // Refresh history display
-        loadAndDisplayHistory();
-        
-    } catch (error) {
-        console.error('Error regenerating plan:', error);
-        alert('Error regenerating curriculum. Please try again.');
-    }
-}
-
-// Show curriculum modal
-function showCurriculumModal(title, content) {
-    const modal = document.getElementById('curriculumModal');
-    const titleEl = document.getElementById('curriculumTitle');
-    const contentEl = document.getElementById('curriculumContent');
-    
-    titleEl.textContent = title;
-    
-    if (content === 'Generating new curriculum...') {
-        contentEl.innerHTML = '<div class="curriculum-loading">🔄 Generating new curriculum...</div>';
-    } else if (content) {
-        contentEl.innerHTML = markdownToHtml(content);
-    } else {
-        contentEl.innerHTML = '<div class="curriculum-error">No curriculum available for this goal.</div>';
-    }
-    
-    modal.style.display = 'flex';
-}
-
-// Hide curriculum modal
-function hideCurriculumModal() {
-    const modal = document.getElementById('curriculumModal');
-    modal.style.display = 'none';
-}
-
-// Add event listeners for history buttons
-function addHistoryEventListeners() {
-    const historyContent = document.getElementById('historyContent');
-    if (!historyContent) return;
-    
-    // Use event delegation for dynamically added buttons
-    historyContent.addEventListener('click', (e) => {
-        if (e.target.classList.contains('history-btn')) {
-            const goalId = e.target.getAttribute('data-goal-id');
-            
-            if (e.target.classList.contains('view')) {
-                handleViewPlan(goalId);
-            } else if (e.target.classList.contains('regenerate')) {
-                handleRegeneratePlan(goalId);
-            }
-        }
-    });
-}
-
-// Add event listeners for curriculum modal
-function addCurriculumModalEventListeners() {
-    const curriculumModal = document.getElementById('curriculumModal');
-    const closeCurriculum = document.getElementById('closeCurriculum');
-    
-    if (closeCurriculum) {
-        closeCurriculum.addEventListener('click', hideCurriculumModal);
-    }
-    
-    if (curriculumModal) {
-        // Close modal when clicking outside
-        curriculumModal.addEventListener('click', (e) => {
-            if (e.target === curriculumModal) {
-                hideCurriculumModal();
-            }
-        });
-        
-        // Close modal with Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && curriculumModal.style.display === 'flex') {
-                hideCurriculumModal();
-            }
-        });
-    }
-}
-
-// Initialize sample data for demonstration
-function initializeSampleData() {
-    const historyKey = 'strive-goal-history';
-    const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
-    
-    // Only add sample data if no history exists
-    if (existingHistory.length === 0) {
-        const sampleGoals = [
-            {
-                id: 'sample-1',
-                title: 'Learn Spanish in 6 months',
-                startDate: '2024-01-15',
-                endDate: '2024-07-15',
-                details: 'Focus on conversational Spanish for travel',
-                structured: true,
-                createdAt: '2024-01-15T10:00:00.000Z',
-                curriculum: generateMockCurriculum({
-                    goal: 'Learn Spanish in 6 months',
-                    startDate: '2024-01-15',
-                    endDate: '2024-07-15',
-                    details: 'Focus on conversational Spanish for travel',
-                    structured: true
-                }),
-                progress: { percentage: 65, completed: 13, total: 20, status: 'in-progress' },
-                notes: 'Focus on conversational Spanish for travel'
-            },
-            {
-                id: 'sample-2',
-                title: 'Complete React Certification',
-                startDate: '2024-02-01',
-                endDate: '2024-04-01',
-                details: 'Build 3 portfolio projects',
-                structured: true,
-                createdAt: '2024-02-01T14:30:00.000Z',
-                curriculum: generateMockCurriculum({
-                    goal: 'Complete React Certification',
-                    startDate: '2024-02-01',
-                    endDate: '2024-04-01',
-                    details: 'Build 3 portfolio projects',
-                    structured: true
-                }),
-                progress: { percentage: 100, completed: 15, total: 15, status: 'completed' },
-                notes: 'Build 3 portfolio projects'
-            },
-            {
-                id: 'sample-3',
-                title: 'Read 12 Books This Year',
-                startDate: '2024-01-01',
-                endDate: '2024-12-31',
-                details: 'Mix of fiction and non-fiction',
-                structured: false,
-                createdAt: '2024-01-01T09:00:00.000Z',
-                curriculum: generateMockCurriculum({
-                    goal: 'Read 12 Books This Year',
-                    startDate: '2024-01-01',
-                    endDate: '2024-12-31',
-                    details: 'Mix of fiction and non-fiction',
-                    structured: false
-                }),
-                progress: { percentage: 25, completed: 3, total: 12, status: 'in-progress' },
-                notes: 'Mix of fiction and non-fiction'
-            }
-        ];
-        
-        localStorage.setItem(historyKey, JSON.stringify(sampleGoals));
-        console.log('Sample data initialized');
-    }
-}
-
 // Initialize the app
 async function initApp() {
+    console.log('Initializing app...');
+    
+    // Check if LearningPlanGenerator is available
+    if (typeof LearningPlanGenerator === 'undefined') {
+        console.error('LearningPlanGenerator is not defined. Check script loading order.');
+    } else {
+        console.log('LearningPlanGenerator is available');
+    }
+    
     const hasPromptAPI = await checkPromptAPI();
     if (hasPromptAPI) {
         await initializeLanguageModel();
     }
     
-    // Initialize sample data if needed
-    initializeSampleData();
+    console.log('App initialization complete');
+}
+
+// Display structured learning plan
+async function displayStructuredPlan(plan) {
+    try {
+        console.log('Displaying structured plan:', plan);
+        
+        const planDiv = document.createElement('div');
+        planDiv.className = 'structured-plan-display';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'plan-title';
+        titleDiv.textContent = 'Your Duolingo-Style Learning Plan';
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'structured-plan-content';
+
+    // Add plan overview
+    const overviewDiv = document.createElement('div');
+    overviewDiv.className = 'plan-overview';
+    overviewDiv.innerHTML = `
+        <h3>🎯 Goal: ${plan.goal}</h3>
+        <p><strong>Timeline:</strong> ${plan.timeline.startDate} to ${plan.timeline.endDate}</p>
+        <p><strong>Total Days:</strong> ${plan.timeline.totalDays} | <strong>Available Days:</strong> ${plan.timeline.availableDays}</p>
+    `;
+
+     // Add categories
+     const categoriesDiv = document.createElement('div');
+     categoriesDiv.className = 'plan-categories';
+     categoriesDiv.innerHTML = '<h3>📚 Learning Categories</h3>';
+     
+     plan.categories.forEach((category, index) => {
+         const categoryDiv = document.createElement('div');
+         categoryDiv.className = 'category-card';
+         categoryDiv.style.borderLeftColor = category.color;
+         categoryDiv.innerHTML = `
+             <h4>${category.title}</h4>
+             <p>${category.description}</p>
+             <div class="category-stats">
+                 <span class="lesson-count">${category.lessons.length} lessons</span>
+                 <span class="difficulty">${getCategoryDifficulty(category)}</span>
+             </div>
+         `;
+         categoriesDiv.appendChild(categoryDiv);
+     });
+
+    // Add gamification info
+    const gamificationDiv = document.createElement('div');
+    gamificationDiv.className = 'plan-gamification';
+    gamificationDiv.innerHTML = `
+        <h3>🎮 Gamification Features</h3>
+        <div class="gamification-grid">
+            <div class="gamification-item">
+                <h4>💎 XP System</h4>
+                <p>Earn XP for completing lessons, perfect scores, and maintaining streaks</p>
+            </div>
+            <div class="gamification-item">
+                <h4>❤️ Hearts</h4>
+                <p>Start with 5 hearts. Lose hearts on mistakes, regain them with success</p>
+            </div>
+            <div class="gamification-item">
+                <h4>🔥 Streaks</h4>
+                <p>Daily, weekly, and monthly streaks with bonus rewards</p>
+            </div>
+            <div class="gamification-item">
+                <h4>🏆 Achievements</h4>
+                <p>Unlock achievements for milestones and special accomplishments</p>
+            </div>
+        </div>
+    `;
+
+    // Add calendar
+    const calendarDiv = document.createElement('div');
+    calendarDiv.className = 'plan-calendar';
+    calendarDiv.innerHTML = '<h3>📅 Daily Schedule</h3>';
     
-    // Load and display existing history
-    loadAndDisplayHistory();
+    const calendarGrid = document.createElement('div');
+    calendarGrid.className = 'calendar-grid';
     
-    // Add event listeners for history buttons
-    addHistoryEventListeners();
+    plan.calendar.slice(0, 14).forEach((day, index) => { // Show first 2 weeks
+        const dayDiv = document.createElement('div');
+        dayDiv.className = `calendar-day ${day.restDay ? 'rest-day' : ''}`;
+        dayDiv.innerHTML = `
+            <div class="day-date">${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+            <div class="day-content">
+                ${day.restDay ? 'Rest Day' : `${day.totalMinutes} min`}
+            </div>
+        `;
+        calendarGrid.appendChild(dayDiv);
+    });
     
-    // Add event listeners for curriculum modal
-    addCurriculumModalEventListeners();
+    calendarDiv.appendChild(calendarGrid);
+
+     contentDiv.appendChild(overviewDiv);
+     contentDiv.appendChild(categoriesDiv);
+     contentDiv.appendChild(gamificationDiv);
+
+    planDiv.appendChild(titleDiv);
+    planDiv.appendChild(contentDiv);
+    chatbotMessages.appendChild(planDiv);
+    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+    
+    } catch (error) {
+        console.error('Error displaying structured plan:', error);
+        addMessage("I encountered an error displaying your structured learning plan. Let me try a different approach.");
+        
+        // Fallback to simple plan display
+        const simplePlanDiv = document.createElement('div');
+        simplePlanDiv.className = 'plan-display';
+        simplePlanDiv.innerHTML = `
+            <div class="plan-title">Your Learning Plan</div>
+            <div class="plan-content">
+                <h3>🎯 Goal: ${plan.goal}</h3>
+                <p><strong>Timeline:</strong> ${plan.timeline.startDate} to ${plan.timeline.endDate}</p>
+                <p><strong>Total Days:</strong> ${plan.timeline.totalDays} | <strong>Available Days:</strong> ${plan.timeline.availableDays}</p>
+                <p>Your structured learning plan has been generated successfully! The system will create a personalized curriculum with gamified lessons, adaptive difficulty, and progress tracking.</p>
+            </div>
+        `;
+        chatbotMessages.appendChild(simplePlanDiv);
+        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+    }
+}
+
+// Helper function to get category difficulty
+function getCategoryDifficulty(category) {
+    const avgDifficulty = category.lessons.reduce((sum, lesson) => sum + lesson.difficulty, 0) / category.lessons.length;
+    return '⭐'.repeat(Math.round(avgDifficulty)) + '☆'.repeat(5 - Math.round(avgDifficulty));
+}
+
+// Add start learning button
+function addStartLearningButton(plan) {
+    const startLearningBtn = document.createElement('button');
+    startLearningBtn.className = 'start-learning-btn';
+    startLearningBtn.innerHTML = `
+        <span class="btn-icon">🚀</span>
+        <span class="btn-text">Start Learning</span>
+    `;
+    
+    startLearningBtn.addEventListener('click', () => {
+        startLearningInterface(plan);
+    });
+    
+    chatbotMessages.appendChild(startLearningBtn);
+    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+}
+
+// Start learning interface
+function startLearningInterface(plan) {
+    // Hide the start learning button
+    const startBtn = document.querySelector('.start-learning-btn');
+    if (startBtn) {
+        startBtn.remove();
+    }
+    
+    // Initialize learning interface
+    const learningInterface = new LearningInterface();
+    learningInterface.init(plan);
 }
 
 // Start the app when page loads

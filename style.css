@@ -106,6 +106,8 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
     gap: clamp(16px, 4vw, 32px);
+    margin-top: clamp(12px, 8vh, 84px);
+    margin-bottom: var(--gap);
     align-items: start;
 }
 
@@ -127,10 +129,6 @@ body {
     transform: rotate(-1deg);
 }
 
-.goal-card:nth-child(4) {
-    transform: rotate(2deg);
-}
-
 .goal-card:hover {
     transform: rotate(0deg) scale(1.02);
 }
@@ -145,10 +143,6 @@ body {
 
 .goal-card.yellow {
     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-}
-
-.goal-card.green {
-    background: linear-gradient(135deg, #cff8d8 0%, #d8fedd 100%);
 }
 
 .goal-card-title {
@@ -1123,4 +1117,42 @@ input::placeholder, textarea::placeholder {
 
 @media (max-width: 768px) {
     .header { left: var(--space); top: var(--space); }
+}
+
+/* Start Learning Button */
+.start-learning-btn {
+    background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 16px 32px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
+    margin: 20px auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.start-learning-btn:hover {
+    background: linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #a855f7 100%);
+    box-shadow: 0 12px 32px rgba(139, 92, 246, 0.4);
+    transform: translateY(-2px);
+}
+
+.start-learning-btn:active {
+    transform: translateY(0);
+}
+
+.btn-icon {
+    font-size: 20px;
+}
+
+.btn-text {
+    font-size: 16px;
+    font-weight: 600;
 }

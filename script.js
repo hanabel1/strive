@@ -618,6 +618,9 @@ async function saveGoalToHistory(goalData) {
         // Refresh history display
         loadAndDisplayHistory();
         
+        // Update todo list
+        updateTodoList();
+        
         return historyItem;
     } catch (error) {
         console.error('Error saving goal to history:', error);
@@ -639,6 +642,9 @@ async function saveGoalToHistory(goalData) {
         existingHistory.unshift(historyItem);
         localStorage.setItem('strive-goal-history', JSON.stringify(existingHistory));
         loadAndDisplayHistory();
+        
+        // Update todo list
+        updateTodoList();
         
         return historyItem;
     }
@@ -892,6 +898,9 @@ async function handleRegeneratePlan(goalId) {
         // Refresh history display
         loadAndDisplayHistory();
         
+        // Update todo list
+        updateTodoList();
+        
     } catch (error) {
         console.error('Error regenerating plan:', error);
         alert('Error regenerating curriculum. Please try again.');
@@ -1055,6 +1064,268 @@ async function initApp() {
     
     // Add event listeners for curriculum modal
     addCurriculumModalEventListeners();
+}
+
+// Todo Management System
+// =====================
+// Functions for parsing curriculum and managing todo tasks
+
+// Parse curriculum text to extract tasks
+function parseCurriculumToTasks(curriculum, courseTitle) {
+    if (!curriculum) return [];
+    
+    const tasks = [];
+    const lines = curriculum.split('\n');
+    
+    // Look for numbered lists, bullet points, or task-like content
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        // Match patterns like "1. Task name", "- Task name", "* Task name"
+        const taskMatch = line.match(/^[\d\-\*\+]\s+(.+)$/);
+        if (taskMatch) {
+            const taskTitle = taskMatch[1].trim();
+            
+            // Skip if it's too short or looks like a header
+            if (taskTitle.length < 10 || taskTitle.match(/^(Module|Phase|Week|Chapter)/i)) {
+                continue;
+            }
+            
+            // Generate a mock due date based on task position
+            const dueDate = generateMockDueDate(i, lines.length);
+            
+            tasks.push({
+                id: `${courseTitle}-${i}-${Date.now()}`,
+                title: taskTitle,
+                due: dueDate,
+                done: false,
+                courseTitle: courseTitle
+            });
+        }
+    }
+    
+    // If no tasks found, create some default ones
+    if (tasks.length === 0) {
+        tasks.push(
+            {
+                id: `${courseTitle}-default-1-${Date.now()}`,
+                title: "Review course materials",
+                due: "This week",
+                done: false,
+                courseTitle: courseTitle
+            },
+            {
+                id: `${courseTitle}-default-2-${Date.now()}`,
+                title: "Complete first assignment",
+                due: "Next week",
+                done: false,
+                courseTitle: courseTitle
+            },
+            {
+                id: `${courseTitle}-default-3-${Date.now()}`,
+                title: "Practice key concepts",
+                due: "In 2 weeks",
+                done: false,
+                courseTitle: courseTitle
+            }
+        );
+    }
+    
+    return tasks.slice(0, 8); // Limit to 8 tasks per course
+}
+
+// Generate mock due date based on task position
+function generateMockDueDate(taskIndex, totalTasks) {
+    const now = new Date();
+    const daysAhead = Math.floor((taskIndex / totalTasks) * 30) + 1; // Spread over 30 days
+    const dueDate = new Date(now.getTime() + (daysAhead * 24 * 60 * 60 * 1000));
+    
+    const options = { month: 'short', day: 'numeric' };
+    return dueDate.toLocaleDateString('en-US', options);
+}
+
+// Update todo list from all active courses
+function updateTodoList() {
+    try {
+        const historyKey = 'strive-goal-history';
+        const todoKey = 'strive-todo-tasks';
+        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        const savedTasks = JSON.parse(localStorage.getItem(todoKey) || '{}');
+        const todoContent = document.getElementById('todoContent');
+        
+        if (!todoContent) return;
+        
+        // Clear existing content
+        todoContent.innerHTML = '';
+        
+        // Get all active courses (not completed)
+        const activeCourses = history.filter(course => 
+            course.progress && course.progress.status !== 'completed'
+        );
+        
+        if (activeCourses.length === 0) {
+            todoContent.innerHTML = `
+                <div class="todo-empty">
+                    No active courses. Create a new goal to see tasks here! ✨
+                </div>
+            `;
+            return;
+        }
+        
+        // Parse tasks from each course
+        const allTasks = [];
+        activeCourses.forEach(course => {
+            if (course.curriculum) {
+                const tasks = parseCurriculumToTasks(course.curriculum, course.title);
+                // Apply saved completion states
+                tasks.forEach(task => {
+                    if (savedTasks[task.id]) {
+                        task.done = savedTasks[task.id].done;
+                    }
+                });
+                allTasks.push(...tasks);
+            }
+        });
+        
+        // Group tasks by course
+        const tasksByCourse = {};
+        allTasks.forEach(task => {
+            if (!tasksByCourse[task.courseTitle]) {
+                tasksByCourse[task.courseTitle] = [];
+            }
+            tasksByCourse[task.courseTitle].push(task);
+        });
+        
+        // Render tasks grouped by course
+        Object.keys(tasksByCourse).forEach(courseTitle => {
+            const courseGroup = createCourseGroupElement(courseTitle, tasksByCourse[courseTitle]);
+            todoContent.appendChild(courseGroup);
+        });
+        
+    } catch (error) {
+        console.error('Error updating todo list:', error);
+    }
+}
+
+// Create course group element
+function createCourseGroupElement(courseTitle, tasks) {
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'todo-course-group';
+    
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'todo-course-title';
+    titleDiv.textContent = courseTitle;
+    
+    groupDiv.appendChild(titleDiv);
+    
+    tasks.forEach(task => {
+        const taskElement = createTaskElement(task);
+        groupDiv.appendChild(taskElement);
+    });
+    
+    return groupDiv;
+}
+
+// Create individual task element
+function createTaskElement(task) {
+    const taskDiv = document.createElement('div');
+    taskDiv.className = 'todo-item';
+    
+    const checkbox = document.createElement('div');
+    checkbox.className = `todo-checkbox ${task.done ? 'checked' : ''}`;
+    checkbox.setAttribute('data-task-id', task.id);
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'todo-task-content';
+    
+    const titleDiv = document.createElement('div');
+    titleDiv.className = `todo-task-title ${task.done ? 'completed' : ''}`;
+    
+    // Parse and format bold text (**text**)
+    titleDiv.innerHTML = formatBoldText(task.title);
+    
+    const dueDiv = document.createElement('div');
+    dueDiv.className = 'todo-task-due';
+    dueDiv.textContent = `Due: ${task.due}`;
+    
+    contentDiv.appendChild(titleDiv);
+    contentDiv.appendChild(dueDiv);
+    
+    taskDiv.appendChild(checkbox);
+    taskDiv.appendChild(contentDiv);
+    
+    return taskDiv;
+}
+
+// Format bold text by converting **text** to <strong>text</strong>
+function formatBoldText(text) {
+    return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
+
+// Handle task completion toggle
+function handleTaskToggle(taskId) {
+    try {
+        const todoKey = 'strive-todo-tasks';
+        const tasks = JSON.parse(localStorage.getItem(todoKey) || '{}');
+        
+        // Toggle the task state
+        if (tasks[taskId]) {
+            tasks[taskId].done = !tasks[taskId].done;
+        } else {
+            // Create new task entry - default to true (checked)
+            tasks[taskId] = { done: true };
+        }
+        
+        localStorage.setItem(todoKey, JSON.stringify(tasks));
+        
+        // Update UI immediately for better UX
+        updateTodoList();
+        
+    } catch (error) {
+        console.error('Error toggling task:', error);
+    }
+}
+
+// Add event listeners for todo checkboxes
+function addTodoEventListeners() {
+    const todoContent = document.getElementById('todoContent');
+    if (!todoContent) return;
+    
+    // Use event delegation for dynamically added checkboxes
+    todoContent.addEventListener('click', (e) => {
+        if (e.target.classList.contains('todo-checkbox')) {
+            const taskId = e.target.getAttribute('data-task-id');
+            if (taskId) {
+                handleTaskToggle(taskId);
+            }
+        }
+    });
+}
+
+// Initialize the app
+async function initApp() {
+    const hasPromptAPI = await checkPromptAPI();
+    if (hasPromptAPI) {
+        await initializeLanguageModel();
+    }
+    
+    // Initialize sample data if needed
+    initializeSampleData();
+    
+    // Load and display existing history
+    loadAndDisplayHistory();
+    
+    // Update todo list
+    updateTodoList();
+    
+    // Add event listeners for history buttons
+    addHistoryEventListeners();
+    
+    // Add event listeners for curriculum modal
+    addCurriculumModalEventListeners();
+    
+    // Add event listeners for todo checkboxes
+    addTodoEventListeners();
 }
 
 // Start the app when page loads

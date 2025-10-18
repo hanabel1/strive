@@ -27,19 +27,35 @@
 
         <div class="subtitle">Build my personal curriculum.</div>
 
-        <div class="goal-cards">
-            <div class="goal-card pink">
-                <div class="goal-card-title">Learn Python in 90 Days</div>
-                <div class="goal-card-motivation">Become that coding girlie</div>
+        <div class="main-content">
+            <div class="goal-cards">
+                <div class="goal-card pink">
+                    <div class="goal-card-title">Learn Python in 90 Days</div>
+                    <div class="goal-card-motivation">Become that coding girlie</div>
+                </div>
+                <div class="goal-card blue">
+                    <div class="goal-card-title">Marathon Training Plan</div>
+                    <div class="goal-card-motivation">We're not walking anymore bestie</div>
+                </div>
+                <div class="goal-card yellow">
+                    <div class="goal-card-title">Master 3D Modeling</div>
+                    <div class="goal-card-motivation">Character design is my passion</div>
+                </div>
+                <div class="goal-card green">
+                    <div class="goal-card-title">Crochet a dino plushie</div>
+                    <div class="goal-card-motivation">Crafts are my therapy</div>
+                </div>
             </div>
-            <div class="goal-card blue">
-                <div class="goal-card-title">Marathon Training Plan</div>
-                <div class="goal-card-motivation">We're not walking anymore bestie</div>
-            </div>
-            <div class="goal-card yellow">
-                <div class="goal-card-title">Master 3D Modeling</div>
-                <div class="goal-card-motivation">Character design is my passion</div>
-            </div>
+
+            <!-- History Panel -->
+            <section id="history-panel" class="history-panel">
+                <div class="history-header">
+                    <h3>✨ Your Past Quests</h3>
+                </div>
+                <div class="history-content" id="historyContent">
+                    <!-- History items will be dynamically added here -->
+                </div>
+            </section>
         </div>
 
         <div class="input-section">
@@ -110,6 +126,19 @@
             <div class="chatbot-input-container">
                 <input type="text" class="chatbot-input" id="chatbotInput" placeholder="Type your response...">
                 <button class="chatbot-send" id="chatbotSend">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Curriculum Modal -->
+    <div class="curriculum-modal" id="curriculumModal">
+        <div class="curriculum-container">
+            <div class="curriculum-header">
+                <h3 class="curriculum-title" id="curriculumTitle">Curriculum Plan</h3>
+                <button class="curriculum-close" id="closeCurriculum">&times;</button>
+            </div>
+            <div class="curriculum-content" id="curriculumContent">
+                <!-- Curriculum content will be loaded here -->
             </div>
         </div>
     </div>

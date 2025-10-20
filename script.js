@@ -228,6 +228,10 @@ function addMessage(content, isUser = false) {
     chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
 }
 
+// This function is no longer needed - we use conversational flow instead
+
+// This function is no longer needed - we use conversational flow instead
+
 // Stream bot message into the DOM character-by-character
 async function streamBotMessage(fullText) {
     const messageDiv = document.createElement('div');
@@ -440,17 +444,106 @@ async function handleChatbotConversation() {
     // Update conversation state
     conversationState.questionsAsked++;
 
-    // Generate AI response
-    const aiResponse = await generateAIResponse(userMessage, conversationState);
-    await streamBotMessage(aiResponse);
+    if (languageModelSession) {
+        // Generate AI response
+        const aiResponse = await generateAIResponse(userMessage, conversationState);
+        await streamBotMessage(aiResponse);
 
-    // Check if we should end the conversation
-    if (conversationState.questionsAsked >= conversationState.maxQuestions || 
-        aiResponse.toLowerCase().includes('plan') || 
-        aiResponse.toLowerCase().includes('step')) {
+        // Check if we should end the conversation
+        if (conversationState.questionsAsked >= conversationState.maxQuestions || 
+            aiResponse.toLowerCase().includes('plan') || 
+            aiResponse.toLowerCase().includes('step')) {
+            
+            // Generate final plan
+            await generateFinalPlan();
+        }
+    } else {
+        // Fallback response when AI is not available
+        const fallbackResponse = "Thank you for your input! I've already generated a comprehensive plan for you above. You can use this as your roadmap to achieve your goal. Feel free to ask any specific questions about the plan or let me know if you'd like me to adjust anything.";
+        await streamBotMessage(fallbackResponse);
+    }
+}
+
+// Display structured learning plan
+async function displayStructuredPlan(plan) {
+    const planText = `---
+
+*Ready to start your learning journey? Click the button below to begin!*`;
+
+    await streamPlan(planText);
+}
+
+// Add "Start Learning" button
+function addStartLearningButton(plan) {
+    console.log('Adding start learning button with plan:', plan);
+    
+    const buttonDiv = document.createElement('div');
+    buttonDiv.className = 'start-learning-container';
+    buttonDiv.innerHTML = `
+        <button class="start-learning-btn" id="startLearningBtn">
+            🎓 Launch Learning Interface
+        </button>
+        <p class="start-learning-description">
+            Click to see your beautiful learning cards with foldable lessons, interactive quizzes, and progress tracking!
+        </p>
+    `;
+    
+    console.log('Button HTML created:', buttonDiv.innerHTML);
+    chatbotMessages.appendChild(buttonDiv);
+    console.log('Button added to DOM');
+    
+    // Add event listener for the button
+    const startBtn = document.getElementById('startLearningBtn');
+    console.log('Adding event listener to button:', startBtn);
+    
+    if (startBtn) {
+        startBtn.addEventListener('click', (e) => {
+            console.log('Button clicked!', e);
+            e.preventDefault();
+            addMessage("🎮 Button clicked! Launching interface...");
+            startLearningInterface(plan);
+        });
+    } else {
+        console.error('Start learning button not found!');
+        addMessage("❌ Error: Button not found. Please try again.");
+    }
+}
+
+// Start the learning interface
+function startLearningInterface(plan) {
+    console.log('Starting learning interface with plan:', plan);
+    
+    // Remove the button
+    const buttonContainer = document.querySelector('.start-learning-container');
+    if (buttonContainer) {
+        buttonContainer.remove();
+    }
+    
+    // Add immediate feedback
+    addMessage("🎮 Launching your Duolingo-style learning interface...");
+    
+    try {
+        // Create and initialize the learning interface
+        const learningInterface = new LearningInterface();
+        console.log('LearningInterface created, initializing with plan...');
+        console.log('Plan structure:', JSON.stringify(plan, null, 2));
+        learningInterface.init(plan);
+        console.log('LearningInterface initialized successfully');
         
-        // Generate final plan
-        await generateFinalPlan();
+        // Add a message about the learning interface
+        addMessage("🎉 Your interactive learning interface is now active! Scroll down to see your beautiful learning cards and start your journey!");
+        
+        // Scroll to the learning interface
+        setTimeout(() => {
+            const learningInterface = document.getElementById('learning-interface');
+            if (learningInterface) {
+                learningInterface.scrollIntoView({ behavior: 'smooth' });
+            }
+        }, 500);
+    } catch (error) {
+        console.error('Error starting learning interface:', error);
+        addMessage("❌ Sorry, there was an error starting the learning interface. Please try again.");
+        addMessage("Error details: " + error.message);
     }
 }
 
@@ -459,7 +552,43 @@ async function generateFinalPlan() {
     if (!languageModelSession) return;
 
     try {
-        const prompt = `Create a detailed, step-by-step plan for achieving this goal: "${conversationState.currentGoal}"
+        // Use the learning plan generator for structured plans
+        if (conversationState.structured) {
+            try {
+                console.log('Creating LearningPlanGenerator...');
+                const planGenerator = new LearningPlanGenerator();
+                console.log('LearningPlanGenerator created successfully');
+                
+                const constraints = {
+                    dailyMinutes: 60, // 1 hour per day as requested
+                    daysPerWeek: 5,
+                    priorSkill: 'beginner',
+                    accessibility: []
+                };
+                
+                console.log('Generating plan with constraints:', constraints);
+                const plan = planGenerator.generatePlan(
+                    conversationState.currentGoal,
+                    conversationState.startDate,
+                    conversationState.endDate,
+                    constraints
+                );
+                
+                console.log('Plan generated successfully:', plan);
+                
+                // Display the structured learning plan
+                await displayStructuredPlan(plan);
+                
+                // Add "Start Learning" button
+                setTimeout(() => {
+                    addStartLearningButton(plan);
+                }, 1000);
+            } catch (error) {
+                console.error('Error in structured plan generation:', error);
+                addMessage("I encountered an error generating your structured learning plan. Let me try with a different approach.");
+                
+                // Fallback to AI-generated plan
+                const prompt = `Create a detailed, step-by-step plan for achieving this goal: "${conversationState.currentGoal}"
 
 Timeline: ${conversationState.startDate} to ${conversationState.endDate}
 Details: ${conversationState.details}
@@ -473,10 +602,28 @@ Provide a comprehensive plan with:
 
 Format as a clear, numbered list with timelines.`;
 
-        const plan = await languageModelSession.prompt(prompt);
+const plan = await languageModelSession.prompt(prompt);
+await streamPlan(plan);
+}
+} else {
+// Use AI for unstructured plans
+const prompt = `Create a detailed, step-by-step plan for achieving this goal: "${conversationState.currentGoal}"
 
-        // Stream the plan progressively
+Timeline: ${conversationState.startDate} to ${conversationState.endDate}
+Details: ${conversationState.details}
+Structured learning: ${conversationState.structured}
+
+Provide a comprehensive plan with:
+1. 5-7 specific, actionable steps
+2. Timeline for each step
+3. Resources or tools needed
+4. Milestones to track progress
+
+        Format as a clear, numbered list with timelines.`;
+
+        const plan = await languageModelSession.prompt(prompt);
         await streamPlan(plan);
+    }
 
         conversationState.conversationComplete = true;
     } catch (error) {
@@ -513,6 +660,34 @@ async function startGoalPlanning(goalData) {
     showChatbot();
 }
 
+// Start goal planning with curriculum generation button
+async function startGoalPlanningWithButton(goalData) {
+    conversationState = {
+        currentGoal: goalData.goal,
+        startDate: goalData.startDate,
+        endDate: goalData.endDate,
+        details: goalData.details,
+        structured: goalData.structured,
+        questionsAsked: 0,
+        maxQuestions: 3,
+        conversationComplete: false
+    };
+
+    // Clear previous messages
+    chatbotMessages.innerHTML = '';
+
+    // Start conversation with welcome message
+    addMessage(`🎯 Great! I'd love to help you create a detailed plan for "${goalData.goal}". Let me ask you a few questions to make sure I give you the best possible roadmap.`);
+    
+    if (!goalData.details) {
+        addMessage("First, can you tell me more about your current experience level with this goal? What do you already know, and what challenges do you expect to face?");
+    } else {
+        addMessage(`I see you mentioned: "${goalData.details}". Can you tell me more about your specific learning style and what resources you prefer to use?`);
+    }
+
+    showChatbot();
+}
+
 // Event listeners
 submitBtn.addEventListener('click', async () => {
     const goal = goalInput.value.trim();
@@ -536,11 +711,8 @@ submitBtn.addEventListener('click', async () => {
             // Save goal to history with curriculum generation
             await saveGoalToHistory(goalData);
 
-            if (languageModelSession) {
-                await startGoalPlanning(goalData);
-            } else {
-                alert('AI assistant is not available. Please enable the Prompt API in Chrome 138+ with the required flags.');
-            }
+            // Always show chatbot with curriculum generation button
+            await startGoalPlanningWithButton(goalData);
         } catch (error) {
             console.error('Error processing goal:', error);
             alert('Error processing your goal. Please try again.');
@@ -588,6 +760,30 @@ async function saveGoalToHistory(goalData) {
         // Generate curriculum using Gemini API
         const curriculum = await generateCurriculum(goalData);
         
+        // Generate lesson plans if structured
+        let lessonPlans = null;
+        if (goalData.structured) {
+            try {
+                const planGenerator = new LearningPlanGenerator();
+                const constraints = {
+                    dailyMinutes: 60,
+                    daysPerWeek: 5,
+                    priorSkill: 'beginner',
+                    accessibility: []
+                };
+                
+                const plan = planGenerator.generatePlan(
+                    goalData.goal,
+                    goalData.startDate,
+                    goalData.endDate,
+                    constraints
+                );
+                lessonPlans = plan;
+            } catch (error) {
+                console.error('Error generating lesson plans:', error);
+            }
+        }
+        
         // Generate mock progress data for demonstration
         const progressData = generateMockProgress(goalData);
         
@@ -600,6 +796,7 @@ async function saveGoalToHistory(goalData) {
             structured: goalData.structured,
             createdAt: new Date().toISOString(),
             curriculum: curriculum,
+            lessonPlans: lessonPlans,
             progress: progressData,
             notes: goalData.details || 'No additional notes'
         };
@@ -719,6 +916,9 @@ function createHistoryItemElement(item, index) {
     const progressPercentage = item.progress.percentage;
     const progressText = `${item.progress.completed} / ${item.progress.total} lessons completed`;
     
+    // Check if this item has lesson plans
+    const hasLessonPlans = item.lessonPlans && item.lessonPlans.categories && item.lessonPlans.categories.length > 0;
+    
     historyItem.innerHTML = `
         <div class="history-item-title">${escapeHtml(item.title)}</div>
         <div class="history-item-dates">${formatDateRange(item.startDate, item.endDate)}</div>
@@ -729,13 +929,77 @@ function createHistoryItemElement(item, index) {
             <div class="progress-text">${progressText}</div>
         </div>
         ${item.notes ? `<div class="history-item-notes">${escapeHtml(item.notes)}</div>` : ''}
+        ${hasLessonPlans ? `
+            <div class="history-lesson-cards">
+                <h4>📚 Your Learning Cards</h4>
+                <div class="lesson-cards-preview">
+                    ${generateLessonCardsPreview(item.lessonPlans)}
+                </div>
+            </div>
+        ` : ''}
         <div class="history-item-actions">
             <button class="history-btn view" data-goal-id="${item.id}">View Plan</button>
+            ${hasLessonPlans ? `<button class="history-btn lessons" data-goal-id="${item.id}">Open Lessons</button>` : ''}
             <button class="history-btn regenerate" data-goal-id="${item.id}">Regenerate</button>
         </div>
     `;
     
     return historyItem;
+}
+
+// Generate lesson cards preview for history
+function generateLessonCardsPreview(lessonPlans) {
+    if (!lessonPlans || !lessonPlans.categories) return '';
+    
+    let preview = '';
+    let cardCount = 0;
+    const maxCards = 6; // Show max 6 cards in preview
+    
+    for (const category of lessonPlans.categories) {
+        if (cardCount >= maxCards) break;
+        
+        for (const lesson of category.lessons) {
+            if (cardCount >= maxCards) break;
+            
+            preview += `
+                <div class="lesson-card-mini">
+                    <div class="lesson-card-mini-icon">${getLessonIcon(lesson)}</div>
+                    <div class="lesson-card-mini-content">
+                        <div class="lesson-card-mini-title">${lesson.title}</div>
+                        <div class="lesson-card-mini-meta">
+                            <span class="lesson-difficulty">🎯 ${lesson.difficulty}</span>
+                            <span class="lesson-duration">⏱️ ${lesson.duration}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            cardCount++;
+        }
+    }
+    
+    if (cardCount < getTotalLessonCount(lessonPlans)) {
+        preview += `<div class="lesson-card-mini more">+${getTotalLessonCount(lessonPlans) - cardCount} more lessons</div>`;
+    }
+    
+    return preview;
+}
+
+// Get total lesson count from lesson plans
+function getTotalLessonCount(lessonPlans) {
+    if (!lessonPlans || !lessonPlans.categories) return 0;
+    return lessonPlans.categories.reduce((total, category) => total + category.lessons.length, 0);
+}
+
+// Get lesson icon based on lesson type
+function getLessonIcon(lesson) {
+    const icons = {
+        'lesson': '📖',
+        'checkpoint': '🎯',
+        'review': '🔄',
+        'practice': '💪',
+        'assessment': '📝'
+    };
+    return icons[lesson.type] || '📚';
 }
 
 // Format date range for display
@@ -758,6 +1022,11 @@ function formatDateRange(startDate, endDate) {
 async function generateCurriculum(goalData) {
     try {
         // Check if we have the Prompt API available (Chrome 138+)
+        // Temporarily use mock curriculum due to Prompt API performance issues
+        console.log('Using mock curriculum (Prompt API temporarily disabled due to performance)');
+        return generateMockCurriculum(goalData);
+        
+        /* Original Prompt API code - disabled due to performance issues
         if (languageModelSession) {
             return await generateCurriculumWithPromptAPI(goalData);
         } else {
@@ -765,6 +1034,7 @@ async function generateCurriculum(goalData) {
             console.log('Prompt API not available, generating mock curriculum');
             return generateMockCurriculum(goalData);
         }
+        */
     } catch (error) {
         console.error('Error generating curriculum:', error);
         return generateMockCurriculum(goalData);
@@ -774,69 +1044,289 @@ async function generateCurriculum(goalData) {
 // Generate curriculum using Chrome's Prompt API (Gemini Nano)
 async function generateCurriculumWithPromptAPI(goalData) {
     try {
-        const prompt = `Create a detailed, structured curriculum plan for this learning goal:
+        const prompt = `Create a concise curriculum for: "${goalData.goal}" (${goalData.startDate} to ${goalData.endDate}). Include 5-6 modules with topics, timeline, and key resources. Keep it practical and actionable.`;
 
-Goal: "${goalData.goal}"
-Timeline: ${goalData.startDate} to ${goalData.endDate}
-Details: ${goalData.details || 'No additional details provided'}
-Structured Learning: ${goalData.structured ? 'Yes' : 'No'}
-
-Please provide a comprehensive curriculum with:
-1. 5-7 main learning modules/phases
-2. Specific topics and skills for each module
-3. Suggested timeline for each module
-4. Recommended resources (books, courses, practice exercises)
-5. Milestones and assessment points
-6. Practical projects or exercises
-
-Format as a clear, structured plan that can be followed step-by-step.`;
-
-        const response = await languageModelSession.prompt(prompt);
-        return response;
+        // Use promptStreaming with AbortController like the original working version
+        console.log('About to call promptStreaming...');
+        const controller = new AbortController();
+        
+        // Add timeout to collect partial response
+        const timeoutId = setTimeout(() => {
+            console.log('Prompt API timeout, using partial response...');
+            controller.abort();
+        }, 15000); // 15 second timeout
+        
+        try {
+            const stream = await languageModelSession.promptStreaming(prompt, { signal: controller.signal });
+            console.log('Got stream, processing chunks...');
+            
+            let fullResponse = '';
+            let chunkCount = 0;
+            for await (const chunk of stream) {
+                console.log('Received chunk:', chunk);
+                fullResponse += chunk;
+                chunkCount++;
+                
+                // If we have a reasonable amount of content, we can use it
+                if (chunkCount > 50 && fullResponse.length > 500) {
+                    console.log('Got substantial response, continuing...');
+                }
+            }
+            
+            clearTimeout(timeoutId);
+            console.log('Stream complete, full response length:', fullResponse.length);
+            return fullResponse;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError' && fullResponse.length > 100) {
+                console.log('Using partial response due to timeout:', fullResponse.length, 'characters');
+                return fullResponse + '\n\n*[Response was truncated due to timeout]*';
+            }
+            throw error;
+        }
     } catch (error) {
         console.error('Error with Prompt API:', error);
         throw error;
     }
 }
 
-// Generate mock curriculum for demonstration
+// Generate Duolingo-style curriculum using CurriculumForge
 function generateMockCurriculum(goalData) {
-    const modules = [
-        "Foundation & Basics",
-        "Core Concepts & Theory", 
-        "Practical Application",
+    const totalDays = calculateDaysBetween(goalData.startDate, goalData.endDate);
+    const weeks = Math.ceil(totalDays / 7);
+    const units = Math.min(weeks, 8); // Max 8 units
+    const lessonsPerUnit = Math.ceil(35 / units); // ~35 total lessons
+    
+    return generateCurriculumForgePlan(goalData, units, lessonsPerUnit, totalDays);
+}
+
+// CurriculumForge: Generate Duolingo-style learning plan
+function generateCurriculumForgePlan(goalData, units, lessonsPerUnit, totalDays) {
+    const startDate = new Date(goalData.startDate);
+    const endDate = new Date(goalData.endDate);
+    
+    return `# 🎯 ${goalData.goal} - Duolingo-Style Learning Journey
+
+## 📊 Your Learning Stats
+- **Total Days**: ${totalDays} days
+- **Units**: ${units} units
+- **Lessons**: ${units * lessonsPerUnit} lessons
+- **Daily Goal**: 15-20 minutes
+- **Hearts**: 5 ❤️ (lose 1 for wrong answers, earn back with practice)
+- **Streak**: 0 🔥 (maintain daily learning)
+
+---
+
+## 🗓️ **DAILY SCHEDULE**
+
+${generateDailySchedule(startDate, endDate, units, lessonsPerUnit)}
+
+---
+
+## 📚 **UNIT BREAKDOWN**
+
+${generateUnits(goalData, units, lessonsPerUnit)}
+
+---
+
+## 🎮 **GAMIFICATION SYSTEM**
+
+### XP & Progression
+- **Lesson Complete**: 10 XP
+- **Perfect Lesson**: +5 XP bonus
+- **Checkpoint Pass**: 50 XP
+- **Unit Complete**: 100 XP
+- **Streak Milestones**: 7 days (25 XP), 30 days (100 XP)
+
+### Hearts System ❤️
+- **Start with**: 5 hearts
+- **Lose heart**: Wrong answer in quiz
+- **Regain heart**: Complete practice lesson
+- **No hearts**: Must review previous lessons
+
+### Streaks 🔥
+- **Daily learning**: Maintains streak
+- **Miss a day**: Streak resets
+- **Longest streak**: Personal record tracking
+
+---
+
+## 🎯 **ADAPTIVE DIFFICULTY**
+
+### Performance Tracking
+- **Accuracy Rate**: Adjusts lesson difficulty
+- **Time per Lesson**: Faster = harder content
+- **Error Patterns**: Focuses on weak areas
+
+### Difficulty Levels (1-5)
+- **Level 1**: Absolute beginner
+- **Level 2**: Basic understanding  
+- **Level 3**: Intermediate skills
+- **Level 4**: Advanced application
+- **Level 5**: Expert mastery
+
+---
+
+## 🏆 **CHECKPOINTS & ASSESSMENTS**
+
+${generateCheckpoints(units)}
+
+---
+
+## 🎉 **MOTIVATION & CELEBRATIONS**
+
+### Daily Nudges
+- "Ready to level up? 🌟"
+- "Your streak is on fire! 🔥"
+- "Just 10 minutes to keep your streak alive!"
+
+### Level-Up Celebrations
+- "🎊 LEVEL UP! You're getting stronger!"
+- "🏆 Unit Complete! You're unstoppable!"
+- "💎 Perfect Score! You're a learning machine!"
+
+---
+
+## 📱 **INTEGRATION FEATURES**
+
+### Todo List Sync
+- Daily lessons appear in your todo list
+- Check off completed lessons
+- Track progress across all units
+
+### History Tracking
+- View past lessons and performance
+- Identify patterns in your learning
+- Celebrate achievements over time
+
+---
+
+*🎮 Ready to start your learning adventure? Let's make ${goalData.goal} happen!*`;
+}
+
+// Generate daily schedule
+function generateDailySchedule(startDate, endDate, units, lessonsPerUnit) {
+    const schedule = [];
+    const totalLessons = units * lessonsPerUnit;
+    let currentDate = new Date(startDate);
+    let lessonNumber = 1;
+    
+    for (let unit = 1; unit <= units; unit++) {
+        schedule.push(`\n### 📅 Unit ${unit} (${currentDate.toLocaleDateString()} - ${new Date(currentDate.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString()})`);
+        
+        for (let lesson = 1; lesson <= lessonsPerUnit && lessonNumber <= totalLessons; lesson++) {
+            const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+            schedule.push(`- **Day ${lessonNumber}** (${dayName}): Lesson ${lessonNumber} - ${getLessonTitle(unit, lesson)}`);
+            currentDate.setDate(currentDate.getDate() + 1);
+            lessonNumber++;
+        }
+        
+        if (lessonNumber <= totalLessons) {
+            schedule.push(`- **Checkpoint**: Review and assessment`);
+        }
+    }
+    
+    return schedule.join('\n');
+}
+
+// Generate units with lessons
+function generateUnits(goalData, units, lessonsPerUnit) {
+    const unitTitles = [
+        "Foundation Basics",
+        "Core Concepts", 
+        "Practical Skills",
         "Advanced Techniques",
-        "Real-world Projects",
-        "Review & Mastery"
+        "Real Applications",
+        "Mastery Practice",
+        "Expert Level",
+        "Capstone Project"
     ];
     
-    return `# ${goalData.goal} - Learning Curriculum
+    return unitTitles.slice(0, units).map((title, index) => {
+        const unitNumber = index + 1;
+        const lessons = [];
+        
+        for (let lesson = 1; lesson <= lessonsPerUnit; lesson++) {
+            const lessonNumber = (unitNumber - 1) * lessonsPerUnit + lesson;
+            lessons.push(generateLesson(unitNumber, lesson, lessonNumber));
+        }
+        
+        return `
+### 🎯 Unit ${unitNumber}: ${title}
+${lessons.join('\n')}
 
-## Overview
-A structured learning path designed to help you achieve your goal of "${goalData.goal}" within your timeline of ${goalData.startDate} to ${goalData.endDate}.
+**Checkpoint**: Complete assessment to unlock Unit ${unitNumber + 1}
+`;
+    }).join('\n');
+}
 
-## Learning Modules
+// Generate individual lesson
+function generateLesson(unit, lesson, lessonNumber) {
+    const drillTypes = [
+        "Multiple Choice Quiz",
+        "Fill-in-the-Blank", 
+        "Order the Steps",
+        "Label the Diagram",
+        "Flash Card Match",
+        "Speed Round",
+        "Error Fixing",
+        "Mini Reflection"
+    ];
+    
+    const selectedDrills = drillTypes.slice(0, Math.floor(Math.random() * 4) + 3);
+    
+    return `
+#### 📖 Lesson ${lessonNumber}: ${getLessonTitle(unit, lesson)}
+- **Goal**: ${getLessonGoal(unit, lesson)}
+- **Duration**: 15-20 minutes
+- **Difficulty**: ${Math.floor(Math.random() * 3) + 1}/5
+- **XP Reward**: 10 XP
+- **Drills**: ${selectedDrills.join(', ')}
+- **Tiny Win**: "${getTinyWinMessage()}"
+`;
+}
 
-${modules.map((module, index) => `
-### ${index + 1}. ${module}
-- **Duration**: 1-2 weeks
-- **Focus**: [Specific topics will be generated based on your goal]
-- **Resources**: Recommended materials and exercises
-- **Milestone**: Key achievement to track progress
-`).join('')}
+// Generate checkpoints
+function generateCheckpoints(units) {
+    const checkpoints = [];
+    
+    for (let i = 1; i <= units; i++) {
+        checkpoints.push(`
+### 🏁 Checkpoint ${i}
+- **When**: After Unit ${i}
+- **Format**: 10-question assessment
+- **Pass Threshold**: 70% accuracy
+- **Reward**: 50 XP + Unlock next unit
+- **Retry**: Available after 24 hours
+- **Review Plan**: Focus on missed concepts`);
+    }
+    
+    return checkpoints.join('\n');
+}
 
-## Assessment Points
-- Weekly progress reviews
-- Module completion checkpoints
-- Final project presentation
+// Helper functions
+function getLessonTitle(unit, lesson) {
+    const titles = [
+        "Getting Started", "Building Blocks", "Core Concepts", "Practice Time",
+        "Skill Building", "Real Examples", "Advanced Tips", "Mastery Focus"
+    ];
+    return titles[lesson % titles.length];
+}
 
-## Next Steps
-1. Review the full curriculum
-2. Set up your learning environment
-3. Begin with Module 1
-4. Track your progress regularly
+function getLessonGoal(unit, lesson) {
+    const goals = [
+        "Understand basic concepts", "Apply new skills", "Practice with examples",
+        "Build confidence", "Master key techniques", "Solve real problems"
+    ];
+    return goals[lesson % goals.length];
+}
 
-*This is a sample curriculum. The actual curriculum will be generated by AI based on your specific goal and requirements.*`;
+function getTinyWinMessage() {
+    const messages = [
+        "You're getting it! 🌟", "Nice work! 🎯", "You're on fire! 🔥",
+        "Amazing progress! 💪", "You're unstoppable! 🚀", "Keep it up! ⭐"
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
 }
 
 // Handle View Plan button click
@@ -858,6 +1348,50 @@ async function handleViewPlan(goalId) {
         console.error('Error viewing plan:', error);
         alert('Error loading curriculum. Please try again.');
     }
+}
+
+// Handle Open Lessons button click
+function handleOpenLessons(goalId) {
+    try {
+        const historyKey = 'strive-goal-history';
+        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        const goal = history.find(item => item.id === goalId);
+        
+        if (!goal) {
+            console.error('Goal not found:', goalId);
+            return;
+        }
+        
+        if (!goal.lessonPlans) {
+            console.error('No lesson plans found for goal:', goalId);
+            alert('No lesson plans available for this goal.');
+            return;
+        }
+        
+        // Open lessons from history
+        openLessonsFromHistory(goal);
+        
+    } catch (error) {
+        console.error('Error opening lessons:', error);
+        alert('Error loading lessons. Please try again.');
+    }
+}
+
+// Open lessons from history
+function openLessonsFromHistory(goal) {
+    console.log('Opening lessons from history for goal:', goal.title);
+    
+    // Create learning interface with the saved lesson plans
+    const learningInterface = new LearningInterface(goal.lessonPlans);
+    learningInterface.setupInterface();
+    
+    // Scroll to the learning interface
+    setTimeout(() => {
+        const learningContainer = document.getElementById('learning-interface');
+        if (learningContainer) {
+            learningContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 100);
 }
 
 // Handle Regenerate Plan button click
@@ -944,6 +1478,8 @@ function addHistoryEventListeners() {
             
             if (e.target.classList.contains('view')) {
                 handleViewPlan(goalId);
+            } else if (e.target.classList.contains('lessons')) {
+                handleOpenLessons(goalId);
             } else if (e.target.classList.contains('regenerate')) {
                 handleRegeneratePlan(goalId);
             }
@@ -1059,6 +1595,9 @@ async function initApp() {
     // Load and display existing history
     loadAndDisplayHistory();
     
+    // Update todo list
+    updateTodoList();
+    
     // Add event listeners for history buttons
     addHistoryEventListeners();
     
@@ -1070,71 +1609,149 @@ async function initApp() {
 // =====================
 // Functions for parsing curriculum and managing todo tasks
 
-// Parse curriculum text to extract tasks
+// Parse Duolingo-style curriculum to extract lessons and tasks
 function parseCurriculumToTasks(curriculum, courseTitle) {
     if (!curriculum) return [];
     
     const tasks = [];
     const lines = curriculum.split('\n');
+    let currentUnit = 0;
+    let lessonNumber = 0;
     
-    // Look for numbered lists, bullet points, or task-like content
+    // Look for lesson patterns in the curriculum
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         
-        // Match patterns like "1. Task name", "- Task name", "* Task name"
-        const taskMatch = line.match(/^[\d\-\*\+]\s+(.+)$/);
-        if (taskMatch) {
-            const taskTitle = taskMatch[1].trim();
+        // Match lesson patterns like "#### 📖 Lesson X:"
+        const lessonMatch = line.match(/^#### 📖 Lesson (\d+): (.+)$/);
+        if (lessonMatch) {
+            lessonNumber = parseInt(lessonMatch[1]);
+            const lessonTitle = lessonMatch[1];
             
-            // Skip if it's too short or looks like a header
-            if (taskTitle.length < 10 || taskTitle.match(/^(Module|Phase|Week|Chapter)/i)) {
-                continue;
+            // Extract lesson details from following lines
+            let goal = '';
+            let duration = '15-20 minutes';
+            let difficulty = '1/5';
+            let xpReward = '10 XP';
+            
+            // Look ahead for lesson details
+            for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
+                const detailLine = lines[j].trim();
+                if (detailLine.startsWith('- **Goal**:')) {
+                    goal = detailLine.replace('- **Goal**:', '').trim();
+                } else if (detailLine.startsWith('- **Duration**:')) {
+                    duration = detailLine.replace('- **Duration**:', '').trim();
+                } else if (detailLine.startsWith('- **Difficulty**:')) {
+                    difficulty = detailLine.replace('- **Difficulty**:', '').trim();
+                } else if (detailLine.startsWith('- **XP Reward**:')) {
+                    xpReward = detailLine.replace('- **XP Reward**:', '').trim();
+                } else if (detailLine.startsWith('####') || detailLine.startsWith('###')) {
+                    break; // Next lesson or unit
+                }
             }
             
-            // Generate a mock due date based on task position
-            const dueDate = generateMockDueDate(i, lines.length);
+            // Generate due date based on lesson number
+            const dueDate = generateLessonDueDate(lessonNumber);
             
             tasks.push({
-                id: `${courseTitle}-${i}-${Date.now()}`,
-                title: taskTitle,
+                id: `${courseTitle}-lesson-${lessonNumber}-${Date.now()}`,
+                title: `📖 Lesson ${lessonNumber}: ${lessonTitle}`,
+                subtitle: goal,
                 due: dueDate,
                 done: false,
-                courseTitle: courseTitle
+                courseTitle: courseTitle,
+                type: 'lesson',
+                duration: duration,
+                difficulty: difficulty
+            });
+        }
+        
+        // Match checkpoint patterns
+        const checkpointMatch = line.match(/^### 🏁 Checkpoint (\d+)$/);
+        if (checkpointMatch) {
+            const checkpointNumber = parseInt(checkpointMatch[1]);
+            const dueDate = generateCheckpointDueDate(checkpointNumber);
+            
+            tasks.push({
+                id: `${courseTitle}-checkpoint-${checkpointNumber}-${Date.now()}`,
+                title: `🏁 Checkpoint ${checkpointNumber}`,
+                subtitle: 'Assessment & Review',
+                due: dueDate,
+                done: false,
+                courseTitle: courseTitle,
+                type: 'checkpoint',
+                duration: '30 minutes',
+                difficulty: '3/5'
             });
         }
     }
     
-    // If no tasks found, create some default ones
+    // If no lessons found, create default learning tasks
     if (tasks.length === 0) {
         tasks.push(
             {
-                id: `${courseTitle}-default-1-${Date.now()}`,
-                title: "Review course materials",
-                due: "This week",
+                id: `${courseTitle}-lesson-1-${Date.now()}`,
+                title: "📖 Lesson 1: Getting Started",
+                subtitle: "Understand basic concepts",
+                due: "Today",
                 done: false,
-                courseTitle: courseTitle
+                courseTitle: courseTitle,
+                type: 'lesson',
+                duration: '15-20 minutes',
+                difficulty: '1/5'
             },
             {
-                id: `${courseTitle}-default-2-${Date.now()}`,
-                title: "Complete first assignment",
-                due: "Next week",
+                id: `${courseTitle}-lesson-2-${Date.now()}`,
+                title: "📖 Lesson 2: Building Blocks", 
+                subtitle: "Apply new skills",
+                due: "Tomorrow",
                 done: false,
-                courseTitle: courseTitle
+                courseTitle: courseTitle,
+                type: 'lesson',
+                duration: '15-20 minutes',
+                difficulty: '2/5'
             },
             {
-                id: `${courseTitle}-default-3-${Date.now()}`,
-                title: "Practice key concepts",
-                due: "In 2 weeks",
+                id: `${courseTitle}-checkpoint-1-${Date.now()}`,
+                title: "🏁 Checkpoint 1",
+                subtitle: "Assessment & Review",
+                due: "In 3 days",
                 done: false,
-                courseTitle: courseTitle
+                courseTitle: courseTitle,
+                type: 'checkpoint',
+                duration: '30 minutes',
+                difficulty: '3/5'
             }
         );
     }
     
-    return tasks.slice(0, 8); // Limit to 8 tasks per course
+    return tasks.slice(0, 12); // Limit to 12 tasks per course
 }
 
-// Generate mock due date based on task position
+// Generate lesson due date based on lesson number
+function generateLessonDueDate(lessonNumber) {
+    const now = new Date();
+    const daysAhead = lessonNumber; // One lesson per day
+    const dueDate = new Date(now.getTime() + (daysAhead * 24 * 60 * 60 * 1000));
+    
+    if (lessonNumber === 1) return "Today";
+    if (lessonNumber === 2) return "Tomorrow";
+    
+    const options = { month: 'short', day: 'numeric' };
+    return dueDate.toLocaleDateString('en-US', options);
+}
+
+// Generate checkpoint due date
+function generateCheckpointDueDate(checkpointNumber) {
+    const now = new Date();
+    const daysAhead = (checkpointNumber * 7) + 3; // Every 7 days + 3 days buffer
+    const dueDate = new Date(now.getTime() + (daysAhead * 24 * 60 * 60 * 1000));
+    
+    const options = { month: 'short', day: 'numeric' };
+    return dueDate.toLocaleDateString('en-US', options);
+}
+
+// Generate mock due date based on task position (legacy)
 function generateMockDueDate(taskIndex, totalTasks) {
     const now = new Date();
     const daysAhead = Math.floor((taskIndex / totalTasks) * 30) + 1; // Spread over 30 days
@@ -1166,24 +1783,29 @@ function updateTodoList() {
         if (activeCourses.length === 0) {
             todoContent.innerHTML = `
                 <div class="todo-empty">
-                    No active courses. Create a new goal to see tasks here! ✨
+                    No active courses. Create a new goal to see today's tasks here! ✨
                 </div>
             `;
             return;
         }
         
-        // Parse tasks from each course
+        // Parse tasks from each course and filter for today only
         const allTasks = [];
+        const today = new Date().toLocaleDateString('en-US');
+        
         activeCourses.forEach(course => {
             if (course.curriculum) {
                 const tasks = parseCurriculumToTasks(course.curriculum, course.title);
-                // Apply saved completion states
+                // Apply saved completion states and filter for today
                 tasks.forEach(task => {
                     if (savedTasks[task.id]) {
                         task.done = savedTasks[task.id].done;
                     }
+                    // Only include tasks due today
+                    if (task.due === today) {
+                        allTasks.push(task);
+                    }
                 });
-                allTasks.push(...tasks);
             }
         });
         
@@ -1196,8 +1818,23 @@ function updateTodoList() {
             tasksByCourse[task.courseTitle].push(task);
         });
         
+        // No stats header - keep it simple
+        
         // Render tasks grouped by course
+        console.log('Rendering courses:', Object.keys(tasksByCourse));
+        console.log('Total tasks to render:', allTasks.length);
+        
+        if (Object.keys(tasksByCourse).length === 0) {
+            todoContent.innerHTML = `
+                <div class="todo-empty">
+                    No tasks for today! 🎉 Check back tomorrow for new tasks.
+                </div>
+            `;
+            return;
+        }
+        
         Object.keys(tasksByCourse).forEach(courseTitle => {
+            console.log('Creating course group for:', courseTitle, 'with', tasksByCourse[courseTitle].length, 'tasks');
             const courseGroup = createCourseGroupElement(courseTitle, tasksByCourse[courseTitle]);
             todoContent.appendChild(courseGroup);
         });
@@ -1207,54 +1844,143 @@ function updateTodoList() {
     }
 }
 
-// Create course group element
+// Create learning stats header
+function createLearningStatsHeader(allTasks) {
+    const statsDiv = document.createElement('div');
+    statsDiv.className = 'learning-stats';
+    
+    // Calculate stats
+    const totalTasks = allTasks.length;
+    const completedTasks = allTasks.filter(task => task.done).length;
+    
+    statsDiv.innerHTML = `
+        <div class="stat-item">
+            <span>📚</span>
+            <span>Progress: <span class="stat-value">${completedTasks}/${totalTasks}</span></span>
+        </div>
+        <div class="stat-item">
+            <span>✅</span>
+            <span>Completed: <span class="stat-value">${completedTasks}</span></span>
+        </div>
+        <div class="stat-item">
+            <span>⏳</span>
+            <span>Remaining: <span class="stat-value">${totalTasks - completedTasks}</span></span>
+        </div>
+    `;
+    
+    return statsDiv;
+}
+
+// Create course group element with card grid
 function createCourseGroupElement(courseTitle, tasks) {
     const groupDiv = document.createElement('div');
-    groupDiv.className = 'todo-course-group';
+    groupDiv.className = 'course-group';
+    
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'course-header';
     
     const titleDiv = document.createElement('div');
-    titleDiv.className = 'todo-course-title';
+    titleDiv.className = 'course-title';
     titleDiv.textContent = courseTitle;
     
-    groupDiv.appendChild(titleDiv);
+    // Simple course title only - no progress bars or stats
+    headerDiv.appendChild(titleDiv);
+    
+    const tasksDiv = document.createElement('div');
+    tasksDiv.className = 'todo-tasks-list';
     
     tasks.forEach(task => {
         const taskElement = createTaskElement(task);
-        groupDiv.appendChild(taskElement);
+        tasksDiv.appendChild(taskElement);
     });
+    
+    groupDiv.appendChild(headerDiv);
+    groupDiv.appendChild(tasksDiv);
     
     return groupDiv;
 }
 
-// Create individual task element
+// Create individual task element as a simple checklist item
 function createTaskElement(task) {
+    console.log('Creating todo item for task:', task.title, 'type:', task.type);
     const taskDiv = document.createElement('div');
-    taskDiv.className = 'todo-item';
+    taskDiv.className = `todo-item ${task.done ? 'completed' : ''}`;
+    taskDiv.setAttribute('data-task-id', task.id);
     
-    const checkbox = document.createElement('div');
-    checkbox.className = `todo-checkbox ${task.done ? 'checked' : ''}`;
-    checkbox.setAttribute('data-task-id', task.id);
+    // Create checkbox and label
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = task.done;
+    checkbox.className = 'todo-checkbox';
     
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'todo-task-content';
+    const label = document.createElement('label');
+    label.className = 'todo-label';
+    label.innerHTML = formatBoldText(task.title);
     
-    const titleDiv = document.createElement('div');
-    titleDiv.className = `todo-task-title ${task.done ? 'completed' : ''}`;
+    // Create task details
+    const detailsDiv = document.createElement('div');
+    detailsDiv.className = 'todo-details';
     
-    // Parse and format bold text (**text**)
-    titleDiv.innerHTML = formatBoldText(task.title);
+    if (task.subtitle) {
+        const subtitleDiv = document.createElement('div');
+        subtitleDiv.className = 'todo-subtitle';
+        subtitleDiv.textContent = task.subtitle;
+        detailsDiv.appendChild(subtitleDiv);
+    }
     
-    const dueDiv = document.createElement('div');
-    dueDiv.className = 'todo-task-due';
-    dueDiv.textContent = `Due: ${task.due}`;
+    // Create meta info
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'todo-meta';
     
-    contentDiv.appendChild(titleDiv);
-    contentDiv.appendChild(dueDiv);
+    if (task.difficulty) {
+        const difficultySpan = document.createElement('span');
+        difficultySpan.className = 'todo-difficulty';
+        difficultySpan.textContent = `Difficulty: ${task.difficulty}`;
+        metaDiv.appendChild(difficultySpan);
+    }
     
+    if (task.duration) {
+        const durationSpan = document.createElement('span');
+        durationSpan.className = 'todo-duration';
+        durationSpan.textContent = `Duration: ${task.duration}`;
+        metaDiv.appendChild(durationSpan);
+    }
+    
+    const dueSpan = document.createElement('span');
+    dueSpan.className = 'todo-due';
+    dueSpan.textContent = `Due: ${task.due}`;
+    metaDiv.appendChild(dueSpan);
+    
+    // Assemble the todo item
     taskDiv.appendChild(checkbox);
-    taskDiv.appendChild(contentDiv);
+    taskDiv.appendChild(label);
+    if (detailsDiv.children.length > 0) {
+        taskDiv.appendChild(detailsDiv);
+    }
+    if (metaDiv.children.length > 0) {
+        taskDiv.appendChild(metaDiv);
+    }
+    
+    // Add click handler for completion toggle
+    taskDiv.addEventListener('click', (e) => {
+        if (e.target !== checkbox) {
+            checkbox.checked = !checkbox.checked;
+        }
+        handleTaskToggle(task.id);
+    });
     
     return taskDiv;
+}
+
+// Get appropriate icon for lesson type
+function getLessonIcon(task) {
+    if (task.type === 'checkpoint') {
+        return '🏁';
+    } else if (task.done) {
+        return '✅';
+    } else {
+        return '📖';
+    }
 }
 
 // Format bold text by converting **text** to <strong>text</strong>
@@ -1300,32 +2026,6 @@ function addTodoEventListeners() {
             }
         }
     });
-}
-
-// Initialize the app
-async function initApp() {
-    const hasPromptAPI = await checkPromptAPI();
-    if (hasPromptAPI) {
-        await initializeLanguageModel();
-    }
-    
-    // Initialize sample data if needed
-    initializeSampleData();
-    
-    // Load and display existing history
-    loadAndDisplayHistory();
-    
-    // Update todo list
-    updateTodoList();
-    
-    // Add event listeners for history buttons
-    addHistoryEventListeners();
-    
-    // Add event listeners for curriculum modal
-    addCurriculumModalEventListeners();
-    
-    // Add event listeners for todo checkboxes
-    addTodoEventListeners();
 }
 
 // Start the app when page loads

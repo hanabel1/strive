@@ -2028,5 +2028,469 @@ function addTodoEventListeners() {
     });
 }
 
+// Goal Card Clickable Functionality
+// =================================
+// Functions to make goal cards clickable and show lesson plan popups
+
+// Sample lesson plans for each goal card
+const goalCardLessonPlans = {
+    'Learn Python in 90 Days': {
+        title: 'Learn Python in 90 Days',
+        description: 'Master Python programming from beginner to intermediate level',
+        duration: '90 days',
+        difficulty: 'Beginner to Intermediate',
+        lessons: 45,
+        hours: 60,
+        overview: 'A comprehensive Python learning journey designed to take you from absolute beginner to confident Python developer. This structured program combines theory with hands-on practice.',
+        sections: {
+            'Week 1-2: Python Basics': [
+                'Setting up Python environment',
+                'Variables and data types',
+                'Basic input/output operations',
+                'String manipulation',
+                'Number operations and math'
+            ],
+            'Week 3-4: Control Flow': [
+                'Conditional statements (if/elif/else)',
+                'For and while loops',
+                'Break and continue statements',
+                'Nested loops and conditions',
+                'Practice with control flow'
+            ],
+            'Week 5-6: Data Structures': [
+                'Lists and list methods',
+                'Dictionaries and key-value pairs',
+                'Tuples and sets',
+                'List comprehensions',
+                'Data structure manipulation'
+            ],
+            'Week 7-8: Functions': [
+                'Function definition and calls',
+                'Parameters and arguments',
+                'Return values',
+                'Scope and local/global variables',
+                'Lambda functions'
+            ],
+            'Week 9-10: File Handling': [
+                'Reading and writing files',
+                'File modes and operations',
+                'Working with CSV files',
+                'Error handling with try/except',
+                'File management best practices'
+            ],
+            'Week 11-12: Object-Oriented Programming': [
+                'Classes and objects',
+                'Methods and attributes',
+                'Inheritance and polymorphism',
+                'Encapsulation and abstraction',
+                'Building your first class'
+            ],
+            'Week 13: Final Project': [
+                'Build a complete Python application',
+                'Integrate all learned concepts',
+                'Code review and optimization',
+                'Documentation and testing',
+                'Deployment preparation'
+            ]
+        },
+        resources: [
+            'Python.org official documentation',
+            'Codecademy Python course',
+            'Real Python tutorials',
+            'Python for Everybody (Coursera)',
+            'Automate the Boring Stuff book'
+        ],
+        projects: [
+            'Calculator application',
+            'Text-based adventure game',
+            'File organizer script',
+            'Web scraper',
+            'Data analysis dashboard'
+        ]
+    },
+    'Marathon Training Plan': {
+        title: 'Marathon Training Plan',
+        description: 'Complete marathon training program for beginners',
+        duration: '16 weeks',
+        difficulty: 'Beginner',
+        lessons: 32,
+        hours: 80,
+        overview: 'A structured 16-week marathon training program designed for beginners. This plan gradually builds endurance and prepares you for your first marathon.',
+        sections: {
+            'Week 1-4: Base Building': [
+                'Easy runs 3-4 times per week',
+                'Cross-training activities',
+                'Proper running form',
+                'Nutrition basics',
+                'Rest and recovery importance'
+            ],
+            'Week 5-8: Endurance Building': [
+                'Long runs up to 10 miles',
+                'Tempo runs introduction',
+                'Strength training',
+                'Flexibility and stretching',
+                'Hydration strategies'
+            ],
+            'Week 9-12: Speed Work': [
+                'Interval training',
+                'Hill workouts',
+                'Race pace practice',
+                'Mental preparation',
+                'Injury prevention'
+            ],
+            'Week 13-16: Tapering': [
+                'Reduced mileage',
+                'Race simulation',
+                'Final preparations',
+                'Race day strategy',
+                'Recovery planning'
+            ]
+        },
+        resources: [
+            'Hal Higdon training plans',
+            'Runner\'s World marathon guide',
+            'Nike Run Club app',
+            'Strava for tracking',
+            'Marathon training books'
+        ],
+        projects: [
+            '5K practice race',
+            '10K practice race',
+            'Half marathon race',
+            'Marathon completion',
+            'Post-race recovery plan'
+        ]
+    },
+    'Master 3D Modeling': {
+        title: 'Master 3D Modeling',
+        description: 'Learn 3D modeling from basics to advanced techniques',
+        duration: '12 weeks',
+        difficulty: 'Intermediate',
+        lessons: 36,
+        hours: 72,
+        overview: 'Comprehensive 3D modeling course covering industry-standard software and techniques. Perfect for aspiring game developers, animators, and digital artists.',
+        sections: {
+            'Week 1-3: Software Fundamentals': [
+                'Blender interface and navigation',
+                'Basic modeling tools',
+                'Object manipulation',
+                'Viewport and camera controls',
+                'Project setup and organization'
+            ],
+            'Week 4-6: Basic Modeling': [
+                'Primitive shapes and modifiers',
+                'Extrusion and inset techniques',
+                'Edge loops and topology',
+                'Subdivision surface modeling',
+                'Basic character modeling'
+            ],
+            'Week 7-9: Advanced Techniques': [
+                'Sculpting tools and brushes',
+                'Retopology workflows',
+                'UV mapping and unwrapping',
+                'Texture painting basics',
+                'Material creation'
+            ],
+            'Week 10-12: Professional Workflow': [
+                'Rigging and animation basics',
+                'Lighting and rendering',
+                'Compositing and post-processing',
+                'Portfolio development',
+                'Industry best practices'
+            ]
+        },
+        resources: [
+            'Blender official documentation',
+            'Blender Guru tutorials',
+            'Grant Abbitt courses',
+            'CG Cookie learning platform',
+            '3D modeling communities'
+        ],
+        projects: [
+            'Simple furniture model',
+            'Character bust sculpture',
+            'Environment scene',
+            'Animated short film',
+            'Professional portfolio piece'
+        ]
+    },
+    'Crochet a dino plushie': {
+        title: 'Crochet a dino plushie',
+        description: 'Learn crochet techniques while creating adorable dinosaur plushies',
+        duration: '8 weeks',
+        difficulty: 'Beginner',
+        lessons: 24,
+        hours: 32,
+        overview: 'A fun and creative crochet course focused on making cute dinosaur plushies. Perfect for beginners who want to learn crochet while creating something adorable.',
+        sections: {
+            'Week 1-2: Crochet Basics': [
+                'Understanding yarn and hooks',
+                'Basic crochet stitches',
+                'Chain stitch and single crochet',
+                'Reading crochet patterns',
+                'Tension and gauge'
+            ],
+            'Week 3-4: Shaping Techniques': [
+                'Increasing and decreasing',
+                'Working in rounds',
+                'Color changes',
+                'Joining techniques',
+                'Basic amigurumi shapes'
+            ],
+            'Week 5-6: Dino Body Parts': [
+                'Head and body construction',
+                'Arms and legs',
+                'Tail and spikes',
+                'Eyes and facial features',
+                'Assembly techniques'
+            ],
+            'Week 7-8: Finishing Touches': [
+                'Stuffing and shaping',
+                'Final assembly',
+                'Embellishments and details',
+                'Quality control',
+                'Care instructions'
+            ]
+        },
+        resources: [
+            'Crochet pattern books',
+            'YouTube crochet tutorials',
+            'Ravelry pattern database',
+            'Crochet communities',
+            'Amigurumi guides'
+        ],
+        projects: [
+            'Simple ball amigurumi',
+            'Basic dinosaur shape',
+            'Detailed dino with features',
+            'Multiple dinosaur collection',
+            'Custom dino design'
+        ]
+    }
+};
+
+// Show lesson plan modal
+function showLessonPlanModal(goalTitle) {
+    const modal = document.getElementById('lessonPlanModal');
+    const titleEl = document.getElementById('lessonPlanTitle');
+    const contentEl = document.getElementById('lessonPlanContent');
+    
+    const lessonPlan = goalCardLessonPlans[goalTitle];
+    
+    if (!lessonPlan) {
+        console.error('No lesson plan found for:', goalTitle);
+        return;
+    }
+    
+    titleEl.textContent = lessonPlan.title;
+    
+    // Generate lesson plan content
+    contentEl.innerHTML = generateLessonPlanContent(lessonPlan);
+    
+    modal.style.display = 'flex';
+    
+    // Add event listeners for modal buttons
+    setupLessonPlanModalListeners(lessonPlan);
+}
+
+// Generate lesson plan content HTML
+function generateLessonPlanContent(lessonPlan) {
+    let html = `
+        <div class="lesson-plan-overview">
+            <h4>🎯 ${lessonPlan.title}</h4>
+            <p>${lessonPlan.overview}</p>
+            
+            <div class="lesson-plan-stats">
+                <div class="lesson-plan-stat">
+                    <div class="lesson-plan-stat-value">${lessonPlan.duration}</div>
+                    <div class="lesson-plan-stat-label">Duration</div>
+                </div>
+                <div class="lesson-plan-stat">
+                    <div class="lesson-plan-stat-value">${lessonPlan.lessons}</div>
+                    <div class="lesson-plan-stat-label">Lessons</div>
+                </div>
+                <div class="lesson-plan-stat">
+                    <div class="lesson-plan-stat-value">${lessonPlan.hours}h</div>
+                    <div class="lesson-plan-stat-label">Total Hours</div>
+                </div>
+                <div class="lesson-plan-stat">
+                    <div class="lesson-plan-stat-value">${lessonPlan.difficulty}</div>
+                    <div class="lesson-plan-stat-label">Level</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="lesson-plan-sections">
+    `;
+    
+    // Add sections
+    Object.entries(lessonPlan.sections).forEach(([sectionTitle, items]) => {
+        html += `
+            <div class="lesson-plan-section">
+                <h5>📚 ${sectionTitle}</h5>
+                <ul>
+                    ${items.map(item => `<li>${item}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    });
+    
+    // Add resources section
+    html += `
+            <div class="lesson-plan-section">
+                <h5>🔗 Resources & Tools</h5>
+                <ul>
+                    ${lessonPlan.resources.map(resource => `<li>${resource}</li>`).join('')}
+                </ul>
+            </div>
+            
+            <div class="lesson-plan-section">
+                <h5>🎨 Projects You'll Build</h5>
+                <ul>
+                    ${lessonPlan.projects.map(project => `<li>${project}</li>`).join('')}
+                </ul>
+            </div>
+        </div>
+    `;
+    
+    return html;
+}
+
+// Setup lesson plan modal event listeners
+function setupLessonPlanModalListeners(lessonPlan) {
+    const modal = document.getElementById('lessonPlanModal');
+    const closeBtn = document.getElementById('closeLessonPlan');
+    const modifyBtn = document.getElementById('modifyPlanBtn');
+    const startBtn = document.getElementById('startLearningBtn');
+    
+    // Close modal
+    closeBtn.onclick = () => {
+        modal.style.display = 'none';
+    };
+    
+    // Close on overlay click
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    };
+    
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.style.display === 'flex') {
+            modal.style.display = 'none';
+        }
+    });
+    
+    // Modify plan button
+    modifyBtn.onclick = () => {
+        modal.style.display = 'none';
+        // Open the main form with pre-filled data
+        openMainFormWithGoal(lessonPlan.title);
+    };
+    
+    // Start learning button
+    startBtn.onclick = () => {
+        modal.style.display = 'none';
+        // Generate a structured learning plan and start the learning interface
+        startLearningFromGoalCard(lessonPlan);
+    };
+}
+
+// Open main form with pre-filled goal data
+function openMainFormWithGoal(goalTitle) {
+    const goalInput = document.getElementById('goalInput');
+    const detailsInput = document.getElementById('detailsInput');
+    
+    goalInput.value = goalTitle;
+    detailsInput.value = `Ready-to-go lesson plan for ${goalTitle}. Click submit to customize this plan!`;
+    
+    // Focus on the goal input
+    goalInput.focus();
+    
+    // Scroll to the form
+    goalInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// Start learning from goal card
+function startLearningFromGoalCard(lessonPlan) {
+    // Generate a structured learning plan using the existing system
+    const planGenerator = new LearningPlanGenerator();
+    const constraints = {
+        dailyMinutes: 30,
+        daysPerWeek: 5,
+        priorSkill: 'beginner',
+        accessibility: []
+    };
+    
+    // Calculate dates (8 weeks from now)
+    const startDate = new Date().toISOString().split('T')[0];
+    const endDate = new Date(Date.now() + 8 * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    const plan = planGenerator.generatePlan(
+        lessonPlan.title,
+        startDate,
+        endDate,
+        constraints
+    );
+    
+    // Show the learning interface
+    const learningInterface = new LearningInterface();
+    learningInterface.init(plan);
+    
+    // Scroll to the learning interface
+    setTimeout(() => {
+        const learningContainer = document.getElementById('learning-interface');
+        if (learningContainer) {
+            learningContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 500);
+}
+
+// Add click event listeners to goal cards
+function addGoalCardClickListeners() {
+    const goalCards = document.querySelectorAll('.goal-card');
+    
+    goalCards.forEach(card => {
+        // Add cursor pointer style
+        card.style.cursor = 'pointer';
+        
+        // Add click event listener
+        card.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Get the goal title from the card
+            const titleElement = card.querySelector('.goal-card-title');
+            const goalTitle = titleElement ? titleElement.textContent : '';
+            
+            if (goalTitle) {
+                showLessonPlanModal(goalTitle);
+            }
+        });
+        
+        // Add hover effects
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'rotate(0deg) scale(1.05)';
+            card.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.2)';
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            // Reset to original rotation based on card position
+            const cards = Array.from(document.querySelectorAll('.goal-card'));
+            const index = cards.indexOf(card);
+            const rotations = ['-5deg', '3deg', '-1deg', '2deg'];
+            const rotation = rotations[index] || '0deg';
+            
+            card.style.transform = `rotate(${rotation}) scale(1)`;
+            card.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.12)';
+        });
+    });
+}
+
 // Start the app when page loads
 initApp();
+
+// Add goal card click listeners after DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    addGoalCardClickListeners();
+});
